@@ -2,28 +2,34 @@ import numpy as np
 import cv2 as cv
 import rawpy
 # define range of colors in HSV
-lower_blue = np.array([120, 50, 20])
-upper_blue = np.array([158, 255, 255])
+lower_blue = np.array([135, 65, 35])
+upper_blue = np.array([165, 255, 255])
 lower_green = np.array([40, 52, 70])
-upper_green = np.array([82, 255, 255])  # TOFIX
+upper_green = np.array([82, 255, 255]) 
 lower_yellow = np.array([20, 100, 100])
 upper_yellow = np.array([30, 255, 255])
 
-lower_red = np.array([0, 100, 100])
+lower_red = np.array([0, 50, 50])
 upper_red = np.array([10, 255, 255])
-lower_red2 = np.array([170, 100, 100])
-upper_red2 = np.array([179, 255, 255])
 
 lower_black = np.array([0, 0, 0])
 upper_black = np.array([179, 255, 75])
-lower_white = np.array([0, 0, 180])  # TOFIX
-upper_white = np.array([0, 0, 255])  # TOFIX
+lower_white = np.array([0, 0, 180]) 
+upper_white = np.array([0, 0, 255]) 
+
 # Create an array specify lower and upper range of colours
-COLOR_RANGE = {'blue': [lower_blue, upper_blue],
-                'green': [lower_green, upper_green],
-                'yellow': [lower_yellow, upper_yellow],
-                'red': [[lower_red, upper_red], [lower_red2, upper_red2]],
-                'black': [lower_black, upper_black]}
+COLOUR_RANGE = {
+    'blue': (lower_blue, upper_blue),
+    'green': (lower_green, upper_green),
+    'yellow': (lower_yellow, upper_yellow),
+    'red': (lower_red, upper_red),
+    'black': (lower_black, upper_black),
+    'white': (lower_white, upper_white)
+}
+
+COLOURS = ('blue', 'green', 'yellow', 'red', 'black', 'white')
+
+kernel = cv.getStructuringElement(cv.MORPH_RECT, (10, 10))
 
 def validCnt(cnt):
     (width, height)= cv.minAreaRect(cnt)[1]
