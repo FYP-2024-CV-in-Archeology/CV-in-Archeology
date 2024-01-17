@@ -5,6 +5,7 @@ from pathlib import Path
 import cv2 as cv
 import utils
 from cropping import Crop
+from color_correction import color_correction
 
 def run(input_path):
     for dirpath, dirnames, filenames in os.walk(input_path):
@@ -16,16 +17,19 @@ def run(input_path):
             if dir > '478130_4419430_8_20':
                 if 'cr' in path.suffix.lower() and (filename == '2' or filename == '1'):
                     print(path)
-                    try:
-                        img = utils.imread(path)
-                        cropped = Crop(img, False)
-                    except Exception as e:
-                        print(f'Cannot process image: {path}. Exception: {e}')
-                        continue
+                    # try:
+                    img = utils.imread(path)
+                    colorCorrection, is24Checker = color_correction(img)
+                    cropped = Crop(colorCorrection, is24Checker)
+                    # except Exception as e:
+                    #     print(f'Cannot process image: {path}. Exception: {e}')
+                    #     continue
                     if cropped.any():
                         # utils.showImage(cropped)
                         # convert to RGB and write into current folder
-                        cropped = cv.cvtColor(cropped, cv.COLOR_BGR2RGB)
+                        if is24Checker == False:
+                            cropped = cv.cvtColor(cropped, cv.COLOR_BGR2RGB)
+                        
                         cv.imwrite(f'outputs/{path.parent.parent.name}_{filename}.jpg', cropped)
                         # exit the program
                         # exit(0)

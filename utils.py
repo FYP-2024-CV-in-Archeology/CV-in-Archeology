@@ -31,6 +31,25 @@ COLOURS = ('blue', 'green', 'yellow', 'red', 'black', 'white')
 
 kernel = cv.getStructuringElement(cv.MORPH_RECT, (10, 10))
 
+TARGETS = {
+    'blue': np.array([26,0,165]),
+    'green': np.array([30,187,22]),
+    'yellow': np.array([252,220,10]),
+    'red': np.array([240,0,22]),
+    'black': np.array([0,0,0]),
+    'white': np.array([255,255,255])
+}
+
+TARGETS_NORM = {
+    'blue': np.array([26,0,165]) / 255.0,
+    'green': np.array([30,187,22]) / 255.0,
+    'yellow': np.array([252,220,10]) / 255.0,
+    'red': np.array([240,0,22]) / 255.0,
+    'black': np.array([0,0,0]) / 255.0,
+    'white': np.array([255,255,255]) / 255.0
+}
+
+
 def validCnt(cnt):
     (width, height)= cv.minAreaRect(cnt)[1]
     if width > 100 and height > 100 and cv.contourArea(cnt) > 500:

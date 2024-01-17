@@ -24,9 +24,17 @@ def percentile_whitebalance(image, percentile_value):
         return whitebalanced
 
 
-def imresize(img, title='img', dst=f'../test_images/test.jpg'):
+def toOpenCVU8(img):
+    out = img * 255
+    out[out < 0] = 0
+    out[out > 255] = 255
+    out = cv.cvtColor(out.astype(np.uint8), cv.COLOR_RGB2BGR)
+    return out
+
+def imresize(img, is24Checker):
     size = 1500
-    #img = np.rot90(img)
+    if is24Checker:
+        img = np.rot90(img)
     if max(img.shape[1], img.shape[0]) >= size:
         if img.shape[1] >= img.shape[0]:
             width = size
@@ -53,6 +61,71 @@ def get_avg_colour_matrix(avgs):
     return avg_matrix
 
 def color_correction(img):
+    
+
+    rgbImg = cv.cvtColor(img, cv.COLOR_RGB2BGR)
+    rgbImg = percentile_whitebalance(rgbImg, 97.5)
+
+    rgb = cv.cvtColor(rgbImg, cv.COLOR_BGR2RGB).astype(np.float64) / 255.0
+
+    detector = cv.mcc.CCheckerDetector_create()
+
+    is24Checker = utils.detect24Checker(rgbImg.copy(), detector)
+
+    if is24Checker:
+
+        chartsRGB = [
+            [[115, 83, 68]],
+            [[196, 147, 127]],
+            [[91, 122, 155]],
+            [[94, 108, 66]],
+            [[129, 128, 176]],
+            [[98, 190, 168]],
+            [[223, 124, 47]],
+            [[72, 92, 174]],
+            [[194, 82, 96]],
+            [[93, 60, 103]],
+            [[162, 190, 62]],
+            [[229, 158, 41]],
+            [[49, 66, 147]],
+            [[77, 153, 71]],
+            [[173, 57, 60]],
+            [[241, 201, 25]],
+            [[190, 85, 150]],
+            [[0, 135, 166]],
+            [[242, 243, 245]],
+            [[203, 203, 204]],
+            [[162, 163, 162]],
+            [[120, 120, 120]],
+            [[84, 84, 84]],
+            [[50, 50, 52]],
+        ]
+
+        chartsRGB_np = np.array(chartsRGB).astype(float) / 255.0
+        try:
+            patchPos = utils.getCardsBlackPos(img.copy())
+        except Exception as e:
+            raise ValueError(f'Error getting patch positions: {e}')
+        
+        checker = detector.getBestColorChecker()
+        chartsRGB = checker.getChartsRGB()
+
+        src = chartsRGB[:, 1].copy().reshape(24, 1, 3) / 255.0
+
+        model = cv.ccm_ColorCorrectionModel(
+            src, chartsRGB_np, cv.ccm.COLOR_SPACE_sRGB)
+
+        model.setWeightCoeff(1)
+
+        model.run()
+
+        calibrated = model.infer(rgb)
+
+        calibrated = toOpenCVU8(calibrated.copy())
+
+        return imresize(calibrated, is24Checker), is24Checker
+
+
     img = img.astype(np.uint8)
 
     AVG = { # to be extracted from the images
@@ -95,7 +168,7 @@ def color_correction(img):
     #to_return = cv.cvtColor(corrected_image_svd, cv.COLOR_RGB2BGR)
     to_return_white_balanced = percentile_whitebalance(corrected_image_svd, 97.5)
     
-    return imresize(to_return_white_balanced)
+    return imresize(to_return_white_balanced, is24Checker), is24Checker
 
 
 if __name__ == "__main__":
