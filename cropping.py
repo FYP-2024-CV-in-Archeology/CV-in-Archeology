@@ -18,10 +18,13 @@ import utils
 
 
 
-def Thresholding(img):
+def Thresholding(img, adaptive):
     # adaptive thresholding
-    thresh = cv.adaptiveThreshold(img,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 31, 3)
-    
+    if adaptive:
+        thresh = cv.adaptiveThreshold(img,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 31, 3)
+    else:
+        _,thresh = cv.threshold(img,0,255,cv.THRESH_BINARY_INV+cv.THRESH_OTSU)
+
     # morphological operations
     kernel_size = 6 if max(img.shape) >= 1000 else 5
     kernel = cv.getStructuringElement(cv.MORPH_RECT, (kernel_size, kernel_size))
@@ -74,26 +77,28 @@ def cropMinAreaRect(img, cnt):
     pts = np.intp(cv.transform(np.array([box]), M))[0]
     moment_transformed = np.intp(cv.transform(np.array([moment]), M))[0]
     pts[pts < 0] = 0
-    img_crop = img_rot[pts[1][1]:pts[0][1], 
-                       pts[1][0]:pts[2][0]]
+    w = pts[2][0] - pts[1][0]
+    h = pts[0][1] - pts[1][1]
+    # img_crop = img_rot[pts[1][1]:pts[0][1], 
+    #                    pts[1][0]:pts[2][0]]
     
-    moment_transformed = [moment_transformed[0][0] - pts[1][0], moment_transformed[0][1] - pts[1][1]]
-    return img_crop, moment_transformed
+    # moment_transformed = [moment_transformed[0][0] - pts[1][0], moment_transformed[0][1] - pts[1][1]]
+    return img_rot, moment_transformed, h > w
 
-def crop_from_moment(img, moment, w, h):
-    x, y = moment
-    if img.shape[0] < img.shape[1]:
+def crop_from_moment(img, moment, w, h, vertical):
+    x, y = moment[0]
+    if not vertical:
         cropped = img[(y - h//2) : (y + h//2), (x - w//2) : (x + w//2)]
     else:
         cropped = img[(y - w//2) : (y + w//2), (x - h//2) : (x + h//2)]
     return cropped
 
 
-def Crop(img):
+def Crop(img, adaptive=True):
     blur = cv.GaussianBlur(img,(5,5),0)
     img_g = cv.cvtColor(blur, cv.COLOR_BGR2GRAY)
     # thresholding
-    thresh = Thresholding(img_g)
+    thresh = Thresholding(img_g, adaptive)
 
     # find contours
     cnts, _ = cv.findContours(
@@ -105,19 +110,20 @@ def Crop(img):
     cv.drawContours(img_cnt, sherdCnt, -1, (0, 255, 0), 30)
 
     # crop the minAreaRect
-    img_crop, moment = cropMinAreaRect(img, sherdCnt)
-    crop = crop_from_moment(img_crop, moment, 1000, 500)
+    img_crop, moment, vertical = cropMinAreaRect(img, sherdCnt)
+    crop = crop_from_moment(img_crop, moment, 1000, 500, vertical)
 
     # rotate img_crop by 90 degree clockwise if it's vertical
     if crop.shape[0] > crop.shape[1]:
         crop = np.rot90(crop, 3)
 
-    utils.showImage(crop)
+    # utils.showImage(crop)
+    return crop
 
 if __name__ == "__main__":
-    img = rawpy.imread('3.CR2')
+    img = rawpy.imread('/Users/ryan/Desktop/CV-in-Archeology/test_images/1/photos/2.CR3')
     assert img is not None, "file could not be read, check with os.path.exists()"
     img = img.postprocess()
     # show the image in a window
-    Crop(img)
+    utils.showImage(Crop(img, False))
 

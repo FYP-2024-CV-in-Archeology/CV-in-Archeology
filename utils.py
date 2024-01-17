@@ -1,5 +1,6 @@
 import numpy as np
 import cv2 as cv
+import rawpy
 # define range of colors in HSV
 lower_blue = np.array([120, 50, 20])
 upper_blue = np.array([158, 255, 255])
@@ -45,7 +46,7 @@ def getCardsBlackPos(img, is24Checker = True):
         img_hsv, COLOR_RANGE['black'][0], COLOR_RANGE['black'][1])
     
     kernel = cv.getStructuringElement(cv.MORPH_RECT, (10, 10))
-    mask = cv.morphologyEx(black_mask.copy(), cv.MORPH_CLOSE, kernel)
+    mask = cv.morphologyEx(black_mask.copy(), cv.MORPH_OPEN, kernel)
     
     cnts, _ = cv.findContours(
         mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
@@ -92,3 +93,13 @@ def drawPatchPos(img, patchPos):
         x, y, w, h = patchPos[color]
         cv.rectangle(img, (x,y), (x+w, y+h), (0, 255, 0), 50)
     showImage(img)
+
+# Read a raw image
+def imread(path, scaling_factor=1):
+    if 'cr' in path.suffix.lower():
+        img = rawpy.imread(str(path)).postprocess()  # access to the RAW image to a numpy RGB array
+        # img = cv.resize(img, None, fx=scaling_factor, fy=scaling_factor, interpolation=cv.INTER_LINEAR)
+    else:
+        img = cv.imread(str(path))
+    return img
+ 
