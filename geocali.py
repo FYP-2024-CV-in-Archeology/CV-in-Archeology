@@ -1,1 +1,88 @@
-{"metadata":{"kernelspec":{"language":"python","display_name":"Python 3","name":"python3"},"language_info":{"name":"python","version":"3.10.12","mimetype":"text/x-python","codemirror_mode":{"name":"ipython","version":3},"pygments_lexer":"ipython3","nbconvert_exporter":"python","file_extension":".py"},"kaggle":{"accelerator":"none","dataSources":[{"sourceId":7236274,"sourceType":"datasetVersion","datasetId":4190228},{"sourceType":"kernelVersion","sourceId":159279609}],"dockerImageVersionId":30626,"isInternetEnabled":true,"language":"python","sourceType":"script","isGpuEnabled":false}},"nbformat_minor":4,"nbformat":4,"cells":[{"cell_type":"code","source":"import numpy as np # linear algebra\nimport pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)\nimport os\nfor dirname, _, filenames in os.walk('/kaggle/input'):\n    for filename in filenames:\n        print(os.path.join(dirname, filename))\nimport cv2 as cv\nimport matplotlib.pyplot as plt\nimport utils\n\nimg = cv.imread('/kaggle/input/picture/2.jpg')\n\npos = utils.getCardsBlackPos(img)\n\nis24Checker = True\nlower_black = np.array([0, 0, 0])\nupper_black = np.array([179, 255, 75])\nCOLOR_RANGE = {'black': [lower_black, upper_black]}\npatchPos = {}\n\nimg_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)  # Convert BGR to HSV\nimg_hsv = cv.blur(img_hsv, (10,10)) #Smoothens the sharp edges and cover highlights\nblack_mask = cv.inRange(\n    img_hsv, COLOR_RANGE['black'][0], COLOR_RANGE['black'][1])\n\nkernel = cv.getStructuringElement(cv.MORPH_RECT, (10, 10))\nmask = cv.morphologyEx(black_mask.copy(), cv.MORPH_OPEN, kernel)\n\ncnts, _ = cv.findContours(\n    mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)\n\n# Fill the black color to get the card\nif is24Checker is True: \n    cv.drawContours(mask, cnts, -1, 255, -1)\n\n#Get Rectangles\ncnts = list(filter(lambda x: len(cv.approxPolyDP(\n        x, 0.05*cv.arcLength(x, True), True) == 4), cnts))\n\ncnts = sorted(cnts, reverse=True, key=cv.contourArea)\n\nif len(cnts) < 2: \n    raise Exception(\"No black squares detected.\")\nelse:\n    print(len(cnts))\n\ncolor_para = cv.arcLength(cnts[0], True)\ncolor_corners = cv.approxPolyDP(cnts[0], 0.04 * peri, True)\nif(color_corners[1][0][1] < color_corners[0][0][1]):\n    color_corners[1][0][1],color_corners[0][0][1] = color_corners[0][0][1],color_corners[1][0][1]\n    color_corners[1][0][0],color_corners[0][0][0] = color_corners[0][0][0],color_corners[1][0][0]\nif(color_corners[3][0][1] < color_corners[2][0][1]):\n    color_corners[3][0][1],color_corners[2][0][1] = color_corners[2][0][1],color_corners[3][0][1]\n    color_corners[3][0][0],color_corners[2][0][0] = color_corners[2][0][0],color_corners[3][0][0]\nprint(color_corners)\n\nscale_para = cv.arcLength(cnts[0], True)\nscale_corners = cv.approxPolyDP(cnts[1], 0.04 * peri, True)\nif(scale_corners[1][0][1] < scale_corners[0][0][1]):\n    scale_corners[1][0][1],scale_corners[0][0][1] = scale_corners[0][0][1],scale_corners[1][0][1]\n    scale_corners[1][0][0],scale_corners[0][0][0] = scale_corners[0][0][0],scale_corners[1][0][0]\nif(scale_corners[3][0][1] < scale_corners[2][0][1]):\n    scale_corners[3][0][1],scale_corners[2][0][1] = scale_corners[2][0][1],scale_corners[3][0][1]\n    scale_corners[3][0][0],scale_corners[2][0][0] = scale_corners[2][0][0],scale_corners[3][0][0]\nprint(scale_corners)\n\noriginal_pers = np.float32([[color_corners[0][0][0],color_corners[0][0][1]],\n                        [color_corners[2][0][0],color_corners[2][0][1]],\n                        [color_corners[1][0][0],color_corners[1][0][1]],\n                        [color_corners[3][0][0],color_corners[3][0][1]]])\n\ntarget_pers = np.float32([[color_corners[0][0][0],color_corners[0][0][1]],\n                        [color_corners[0][0][0]+1780.86,color_corners[0][0][1]],\n                        [color_corners[0][0][0],color_corners[0][0][1]+2648.25],\n                        [color_corners[0][0][0]+1780.86,color_corners[0][0][1]+2648.25]])\n\n#scale bar is 5cm * 2 cm, 1 cm <-> 354.330 pixels under 900 dpi\n#color bar is around 5.0260cm * 7.4740cm 1780.86*2648.25 pixels\n\nrows,cols,ch = img.shape\ngeocal = cv.getPerspectiveTransform(original_pers,target_pers)\ndst = cv.warpPerspective(img,geocal,(5000,3500))\nplt.subplot(121),plt.imshow(img),plt.title('Input')\nplt.subplot(122),plt.imshow(dst),plt.title('Output')\nplt.show()\ncv.imwrite('output.jpg', dst, [cv.IMWRITE_JPEG_QUALITY, 90])","metadata":{"_uuid":"25faac28-9e3d-4660-8a73-57339b045401","_cell_guid":"ac5e73dc-fce6-4e62-a99e-99b9741275c8","collapsed":false,"jupyter":{"outputs_hidden":false},"trusted":true},"execution_count":null,"outputs":[]}]}
+import numpy as np
+import pandas as pd
+import cv2 as cv
+import matplotlib.pyplot as plt
+import utils
+
+img = cv.imread('/picture/2.jpg')
+
+pos = utils.getCardsBlackPos(img)
+
+### Detect color bar & scalr bar
+is24Checker = True
+lower_black = np.array([0, 0, 0])
+upper_black = np.array([179, 255, 75])
+COLOR_RANGE = {'black': [lower_black, upper_black]}
+patchPos = {}
+
+img_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)  # Convert BGR to HSV
+img_hsv = cv.blur(img_hsv, (10,10)) #Smoothens the sharp edges and cover highlights
+black_mask = cv.inRange(
+    img_hsv, COLOR_RANGE['black'][0], COLOR_RANGE['black'][1])
+
+kernel = cv.getStructuringElement(cv.MORPH_RECT, (10, 10))
+mask = cv.morphologyEx(black_mask.copy(), cv.MORPH_OPEN, kernel)
+
+cnts, _ = cv.findContours(
+    mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+# Fill the black color to get the card
+if is24Checker is True: 
+    cv.drawContours(mask, cnts, -1, 255, -1)
+
+# Get Rectangles
+cnts = list(filter(lambda x: len(cv.approxPolyDP(
+        x, 0.05*cv.arcLength(x, True), True) == 4), cnts))
+
+cnts = sorted(cnts, reverse=True, key=cv.contourArea)
+
+if len(cnts) < 2: 
+    raise Exception("No black squares detected.")
+else:
+    print(len(cnts))
+
+# Put corners in right order for perspective transformation
+
+color_para = cv.arcLength(cnts[0], True)
+color_corners = cv.approxPolyDP(cnts[0], 0.04 * peri, True)
+if(color_corners[1][0][1] < color_corners[0][0][1]):
+    color_corners[1][0][1],color_corners[0][0][1] = color_corners[0][0][1],color_corners[1][0][1]
+    color_corners[1][0][0],color_corners[0][0][0] = color_corners[0][0][0],color_corners[1][0][0]
+if(color_corners[3][0][1] < color_corners[2][0][1]):
+    color_corners[3][0][1],color_corners[2][0][1] = color_corners[2][0][1],color_corners[3][0][1]
+    color_corners[3][0][0],color_corners[2][0][0] = color_corners[2][0][0],color_corners[3][0][0]
+print(color_corners)
+
+scale_para = cv.arcLength(cnts[0], True)
+scale_corners = cv.approxPolyDP(cnts[1], 0.04 * peri, True)
+if(scale_corners[1][0][1] < scale_corners[0][0][1]):
+    scale_corners[1][0][1],scale_corners[0][0][1] = scale_corners[0][0][1],scale_corners[1][0][1]
+    scale_corners[1][0][0],scale_corners[0][0][0] = scale_corners[0][0][0],scale_corners[1][0][0]
+if(scale_corners[3][0][1] < scale_corners[2][0][1]):
+    scale_corners[3][0][1],scale_corners[2][0][1] = scale_corners[2][0][1],scale_corners[3][0][1]
+    scale_corners[3][0][0],scale_corners[2][0][0] = scale_corners[2][0][0],scale_corners[3][0][0]
+print(scale_corners)
+
+# Original & Target perspective
+original_pers = np.float32([[color_corners[0][0][0],color_corners[0][0][1]],
+                        [color_corners[2][0][0],color_corners[2][0][1]],
+                        [color_corners[1][0][0],color_corners[1][0][1]],
+                        [color_corners[3][0][0],color_corners[3][0][1]]])
+
+target_pers = np.float32([[color_corners[0][0][0],color_corners[0][0][1]],
+                        [color_corners[0][0][0]+1780.86,color_corners[0][0][1]],
+                        [color_corners[0][0][0],color_corners[0][0][1]+2648.25],
+                        [color_corners[0][0][0]+1780.86,color_corners[0][0][1]+2648.25]])
+
+#scale bar is 5cm * 2 cm, 1 cm <-> 354.330 pixels under 900 dpi
+#color bar is around 5.0260cm * 7.4740cm 1780.86*2648.25 pixels
+
+rows,cols,ch = img.shape
+geocal = cv.getPerspectiveTransform(original_pers,target_pers)
+dst = cv.warpPerspective(img,geocal,(5000,3500))
+plt.subplot(121),plt.imshow(img),plt.title('Input')
+plt.subplot(122),plt.imshow(dst),plt.title('Output')
+plt.show()
+
+#output processed image
+cv.imwrite('output.jpg', dst, [cv.IMWRITE_JPEG_QUALITY, 90])
