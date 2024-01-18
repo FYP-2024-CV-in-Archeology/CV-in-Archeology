@@ -4,7 +4,8 @@ sys.path.append('../')
 from pathlib import Path
 import cv2 as cv
 import utils
-from cropping import Crop
+import rawpy
+import cropping
 from color_correction import color_correction
 
 def run(input_path):
@@ -19,20 +20,26 @@ def run(input_path):
                     print(path)
                     # try:
                     img = utils.imread(path)
+                    img_orig = img.copy()
                     colorCorrection, is24Checker = color_correction(img)
-                    cropped = Crop(colorCorrection, is24Checker)
+                    sherdCnt = cropping.detectSherd(colorCorrection, is24Checker)
+                    # draw contours
+                    # img_cnt = img.copy()
+                    # cv.drawContours(img_cnt, sherdCnt, -1, (0, 255, 0), 30)
+                    # utils.showImage(img_cnt)
+                    cropped = cropping.crop(colorCorrection, sherdCnt)
+                    
+                    # utils.showImage(cropped)
                     # except Exception as e:
                     #     print(f'Cannot process image: {path}. Exception: {e}')
                     #     continue
                     if cropped.any():
                         # utils.showImage(cropped)
                         # convert to RGB and write into current folder
-                        if is24Checker == False:
-                            cropped = cv.cvtColor(cropped, cv.COLOR_BGR2RGB)
-                        
+                        cropped = cv.cvtColor(cropped, cv.COLOR_BGR2RGB)
                         cv.imwrite(f'outputs/{path.parent.parent.name}_{filename}.jpg', cropped)
                         # exit the program
                         # exit(0)
 
 if __name__ == "__main__":
-    run("test_images")
+    run("test")

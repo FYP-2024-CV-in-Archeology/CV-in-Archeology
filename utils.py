@@ -67,11 +67,11 @@ def getCardsBlackPos(img, is24Checker = True):
     patchPos = {}
     
     img_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)  # Convert BGR to HSV
+    
     black_mask = cv.inRange(
         img_hsv, COLOUR_RANGE['black'][0], COLOUR_RANGE['black'][1])
-    
     kernel = cv.getStructuringElement(cv.MORPH_RECT, (10, 10))
-    mask = cv.morphologyEx(black_mask.copy(), cv.MORPH_OPEN, kernel)
+    mask = cv.morphologyEx(black_mask.copy(), cv.MORPH_CLOSE, kernel)
     
     cnts, _ = cv.findContours(
         mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)

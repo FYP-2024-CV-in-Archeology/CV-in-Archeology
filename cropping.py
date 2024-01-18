@@ -16,8 +16,6 @@ import matplotlib.pyplot as plt
 
 import utils
 
-
-
 def Thresholding(img, adaptive):
     # adaptive thresholding
     if adaptive:
@@ -37,7 +35,6 @@ def Thresholding(img, adaptive):
             cv.drawContours(filled, [cnt], 0, 255, -1)
 
     filled = cv.morphologyEx(filled, cv.MORPH_OPEN, kernel)
-
     return filled
 
 # Guess if a contour is a sherd
@@ -94,7 +91,13 @@ def crop_from_moment(img, moment, w, h, vertical):
     return cropped
 
 
-def Crop(img, adaptive=True):
+def detectSherd(img, adaptive=True):
+    # if adaptive:
+    #     # convert BGR to RGB
+    #     img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+
+    # utils.showImage(img)
+
     blur = cv.GaussianBlur(img,(5,5),0)
     img_g = cv.cvtColor(blur, cv.COLOR_BGR2GRAY)
     # thresholding
@@ -105,10 +108,15 @@ def Crop(img, adaptive=True):
     thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
     # get the sherd contour
-    sherdCnt = getSherdCnt(img, cnts, utils.detect24Checker(img, cv.mcc.CCheckerDetector_create()))
-    img_cnt = img.copy()
-    cv.drawContours(img_cnt, sherdCnt, -1, (0, 255, 0), 30)
+    sherdCnt = getSherdCnt(img, cnts, adaptive)
 
+    # img_cnt = img.copy()
+    # cv.drawContours(img_cnt, sherdCnt, -1, (0, 255, 0), 30)
+    # utils.showImage(img_cnt)
+    return sherdCnt
+
+
+def crop(img, sherdCnt):
     # crop the minAreaRect
     img_crop, moment, vertical = cropMinAreaRect(img, sherdCnt)
     crop = crop_from_moment(img_crop, moment, 1000, 500, vertical)
@@ -125,5 +133,4 @@ if __name__ == "__main__":
     assert img is not None, "file could not be read, check with os.path.exists()"
     img = img.postprocess()
     # show the image in a window
-    utils.showImage(Crop(img, False))
-
+    # utils.showImage(Crop(img, False))
