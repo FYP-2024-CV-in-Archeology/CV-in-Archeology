@@ -1,9 +1,11 @@
 import numpy as np # linear algebra
-import pandas as pd # data processing
+# import pandas as pd # data processing
 import rawpy
 import cv2 as cv
 import matplotlib.pyplot as plt
 import math
+import utils
+from color_correction import color_correction
 #import utils
 
 def get_black_color_range():
@@ -59,7 +61,7 @@ def get_perspective(rows,cols,scaling_ratio):
 
 def scaling(img, is24Checker):
     rows,cols,ch = img.shape
-    if(!is24Checker):
+    if(not is24Checker):
         return img
     cnts = get_contours(img,True)
     

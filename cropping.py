@@ -24,7 +24,16 @@ def Thresholding(img, adaptive):
         _,thresh = cv.threshold(img,0,255,cv.THRESH_BINARY_INV+cv.THRESH_OTSU)
 
     # morphological operations
-    kernel_size = 6 if max(img.shape) >= 1000 else 5
+    # resize image
+    if max(img.shape) >= 10000:
+        kernel_size = 9
+    elif max(img.shape) >= 6000:
+        kernel_size = 8
+    elif max(img.shape) >= 4000:
+        kernel_size = 6
+    else:
+        kernel_size = 5
+    # kernel_size = 6 if max(img.shape) >= 6000 else 5
     kernel = cv.getStructuringElement(cv.MORPH_RECT, (kernel_size, kernel_size))
     thresh = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
     filled = np.zeros_like(thresh)
@@ -35,6 +44,8 @@ def Thresholding(img, adaptive):
             cv.drawContours(filled, [cnt], 0, 255, -1)
 
     filled = cv.morphologyEx(filled, cv.MORPH_OPEN, kernel)
+    # filled = cv.resize(filled, (0, 0), fx=2, fy=2)
+    utils.showImage(filled)
     return filled
 
 # Guess if a contour is a sherd

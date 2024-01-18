@@ -6,8 +6,9 @@ import cv2 as cv
 import utils
 import rawpy
 import cropping
-import scaling
-from color_correction import color_correction
+from scaling import scaling
+import color_correction
+import numpy as np
 
 def run(input_path):
     for dirpath, dirnames, filenames in os.walk(input_path):
@@ -22,10 +23,17 @@ def run(input_path):
                     # try:
                     img = utils.imread(path)
                     img_orig = img.copy()
+                    bgr = cv.cvtColor(img, cv.COLOR_RGB2BGR)
+                    bgr = color_correction.percentile_whitebalance(bgr, 97.5)
+
+                    detector = cv.mcc.CCheckerDetector_create()
+                    is24Checker = utils.detect24Checker(bgr.copy(), detector)  # must be bgr
                     #scaling part with no geocali
-                    img = scaling(img)
-                    colorCorrection, is24Checker = color_correction(img)
-                    sherdCnt = cropping.detectSherd(colorCorrection, is24Checker)
+                    img_scal= scaling(img_orig, is24Checker)
+                    # calculate the dpi of img_scal
+
+                    colorCorrection, is24Checker = color_correction.color_correction(img_scal)
+                    sherdCnt = cropping.detectSherd(img_scal, is24Checker)
                     # draw contours
                     # img_cnt = img.copy()
                     # cv.drawContours(img_cnt, sherdCnt, -1, (0, 255, 0), 30)
@@ -45,4 +53,4 @@ def run(input_path):
                         # exit(0)
 
 if __name__ == "__main__":
-    run("test")
+    run("test_images")

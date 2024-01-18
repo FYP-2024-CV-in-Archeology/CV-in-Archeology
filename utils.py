@@ -79,10 +79,10 @@ def getCardsBlackPos(img, is24Checker = True):
     # Fill the black color to get the card
     if is24Checker is True: 
         cv.drawContours(mask, cnts, -1, 255, -1)
-
+    # showImage(mask)
     # Get rectangle only
     cnts = list(filter(lambda x: len(cv.approxPolyDP(
-            x, 0.05*cv.arcLength(x, True), True)) == 4, cnts))
+            x, 0.01*cv.arcLength(x, True), True)) == 4, cnts))
 
     cnts = sorted(cnts, reverse=True, key=cv.contourArea)
    
