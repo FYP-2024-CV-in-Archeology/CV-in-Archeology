@@ -6,6 +6,7 @@ import cv2 as cv
 import utils
 import rawpy
 import cropping
+import scaling
 from color_correction import color_correction
 
 def run(input_path):
@@ -21,6 +22,8 @@ def run(input_path):
                     # try:
                     img = utils.imread(path)
                     img_orig = img.copy()
+                    #scaling part with no geocali
+                    img = scaling(img)
                     colorCorrection, is24Checker = color_correction(img)
                     sherdCnt = cropping.detectSherd(colorCorrection, is24Checker)
                     # draw contours
