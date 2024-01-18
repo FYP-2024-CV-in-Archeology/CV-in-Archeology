@@ -1,10 +1,6 @@
 import numpy as np # linear algebra
 import pandas as pd # data processing
 import rawpy
-import os
-for dirname, _, filenames in os.walk('/kaggle/input'):
-    for filename in filenames:
-        print(os.path.join(dirname, filename))
 import cv2 as cv
 import matplotlib.pyplot as plt
 import math
@@ -93,9 +89,8 @@ def scaling(img):
     return dst
     
 if __name__ == "__main__":
-    img = rawpy.imread('/kaggle/input/picture/1.CR2').postprocess()
+    img = rawpy.imread('/Users/ryan/Desktop/CV-in-Archeology/test_images/1/photos/2.CR3')
     assert img is not None, "file could not be read, check with os.path.exists()"
-    img = scaling(img)
-    plt.subplot(121),plt.imshow(img),plt.title('Input')
-    plt.subplot(122),plt.imshow(dst),plt.title('Output')
-    plt.show()
+    img = img.postprocess()
+    # show the image in a window
+    utils.showImage(color_correction(img))
