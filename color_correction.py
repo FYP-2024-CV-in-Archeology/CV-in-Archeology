@@ -28,7 +28,7 @@ def toOpenCVU8(img):
     out = img * 255
     out[out < 0] = 0
     out[out > 255] = 255
-    out = cv.cvtColor(out.astype(np.uint8), cv.COLOR_RGB2BGR)
+    out = out.astype(np.uint8)
     return out
 
 def imresize(img, is24Checker):
@@ -102,6 +102,7 @@ def color_correction(img):
         ]
 
         chartsRGB_np = np.array(chartsRGB).astype(float) / 255.0
+        
         try:
             patchPos = utils.getCardsBlackPos(img.copy())
         except Exception as e:
