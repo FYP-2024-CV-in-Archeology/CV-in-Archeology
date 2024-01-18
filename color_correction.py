@@ -168,6 +168,8 @@ def color_correction(img):
 
     #to_return = cv.cvtColor(corrected_image_svd, cv.COLOR_RGB2BGR)
     to_return_white_balanced = percentile_whitebalance(corrected_image_svd, 97.5)
+
+    to_return_white_balanced = cv.add(to_return_white_balanced, (10, 10, 10, 0)) # add brightness
     
     return imresize(to_return_white_balanced, is24Checker), is24Checker
 
