@@ -36,8 +36,8 @@ def get_contours(img,is24Checker):
 
 def get_scaling_ratio(w,h):
     #directly get scaling ratio by comparing diagonal length
-    d = math.sqrt(l1**2 + l2**2)
-    #3191.34617 pixels for diagonal
+    d = math.sqrt(w**2 + h**2)
+    #3191.34617~3245.0 pixels for diagonal
     scaling_ratio = d / 3191.347    
     return scaling_ratio
 
@@ -85,7 +85,7 @@ def scaling(img):
     target_pers = get_perspective(rows,cols,scaling_ratio)
 
     geocal = cv.getPerspectiveTransform(original_pers,target_pers)
-    dst = cv.warpPerspective(img,geocal,(int(cols/scaling_ratio),int(rows/scaling_ratio)))
+    dst = cv.warpPerspective(img,geocal,(int(cols/scaling_ratio),int(rows/scaling_ratio)),cv.INTER_LANCZOS4)
     return dst
     
 if __name__ == "__main__":
