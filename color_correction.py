@@ -124,7 +124,7 @@ def color_correction(img):
 
         calibrated = toOpenCVU8(calibrated.copy())
 
-        return imresize(calibrated, is24Checker), is24Checker
+        return calibrated, is24Checker
 
 
     img = img.astype(np.uint8)
@@ -171,7 +171,7 @@ def color_correction(img):
 
     to_return_white_balanced = cv.add(to_return_white_balanced, (10, 10, 10, 0)) # add brightness
     
-    return imresize(to_return_white_balanced, is24Checker), is24Checker
+    return to_return_white_balanced, is24Checker
 
 
 if __name__ == "__main__":
