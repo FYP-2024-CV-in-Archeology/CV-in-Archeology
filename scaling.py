@@ -57,9 +57,10 @@ def get_perspective(rows,cols,scaling_ratio):
                        [rows/scaling_ratio,cols/scaling_ratio]])
     return pers
 
-def scaling(img):
+def scaling(img, is24Checker):
     rows,cols,ch = img.shape
-
+    if(!is24Checker):
+        return img
     cnts = get_contours(img,True)
     
     #if is24Checker is True: 
