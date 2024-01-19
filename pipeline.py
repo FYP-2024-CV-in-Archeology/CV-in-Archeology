@@ -28,7 +28,7 @@ def run(input_path):
 
                     detector = cv.mcc.CCheckerDetector_create()
                     is24Checker = utils.detect24Checker(bgr.copy(), detector)  # must be bgr
-                    print(is24Checker)
+                    # print(is24Checker)
                     #scaling part with no geocali
                     img_scal= scaling(img_orig, is24Checker)
                     # calculate the dpi of img_scal
