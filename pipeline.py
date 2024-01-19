@@ -28,11 +28,12 @@ def run(input_path):
 
                     detector = cv.mcc.CCheckerDetector_create()
                     is24Checker = utils.detect24Checker(bgr.copy(), detector)  # must be bgr
+                    print(is24Checker)
                     #scaling part with no geocali
                     img_scal= scaling(img_orig, is24Checker)
                     # calculate the dpi of img_scal
 
-                    colorCorrection, is24Checker = color_correction.color_correction(img_scal)
+                    colorCorrection, _ = color_correction.color_correction(img_scal)
                     sherdCnt = cropping.detectSherd(img_scal, is24Checker)
                     # draw contours
                     # img_cnt = img.copy()

@@ -45,7 +45,7 @@ def Thresholding(img, adaptive):
 
     filled = cv.morphologyEx(filled, cv.MORPH_OPEN, kernel)
     # filled = cv.resize(filled, (0, 0), fx=2, fy=2)
-    utils.showImage(filled)
+    # utils.showImage(filled)
     return filled
 
 # Guess if a contour is a sherd
