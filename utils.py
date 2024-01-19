@@ -71,7 +71,8 @@ def getCardsBlackPos(img, is24Checker = True):
     black_mask = cv.inRange(
         img_hsv, COLOUR_RANGE['black'][0], COLOUR_RANGE['black'][1])
     kernel = cv.getStructuringElement(cv.MORPH_RECT, (10, 10))
-    mask = cv.morphologyEx(black_mask.copy(), cv.MORPH_CLOSE, kernel)
+    
+    mask = cv.morphologyEx(black_mask.copy(), cv.MORPH_CLOSE, kernel, iterations=2)
     
     cnts, _ = cv.findContours(
         mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
@@ -82,7 +83,7 @@ def getCardsBlackPos(img, is24Checker = True):
     # showImage(mask)
     # Get rectangle only
     cnts = list(filter(lambda x: len(cv.approxPolyDP(
-            x, 0.03*cv.arcLength(x, True), True)) == 4, cnts))
+            x, 0.01*cv.arcLength(x, True), True)) == 4, cnts))
 
     cnts = sorted(cnts, reverse=True, key=cv.contourArea)
    
@@ -105,7 +106,7 @@ def getCardsBlackPos(img, is24Checker = True):
 # detect if 24-patch color card exists
 def detect24Checker(img, detector, kernel_size=5):
     kernel = np.ones((kernel_size, kernel_size), np.uint8)
-    closing = cv.morphologyEx(img, cv.MORPH_CLOSE, kernel)
+    closing = cv.morphologyEx(img, cv.MORPH_OPEN, kernel)
     processParams = cv.mcc.DetectorParameters_create()
     processParams.maxError = 0.05
     if not detector.process(closing, cv.mcc.MCC24, 1, params=processParams):
