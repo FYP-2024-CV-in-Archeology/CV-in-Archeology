@@ -63,7 +63,7 @@ def calc_scaling_ratio(img, is24Checker):
     rows,cols,ch = img.shape
     if(not is24Checker):
         #cnts = get_contours(img,False)
-        return img
+        return 1.0
     else:
         cnts = get_contours(img,True)
     
@@ -85,8 +85,8 @@ def calc_scaling_ratio(img, is24Checker):
     return scaling_ratio
 
 def scaling(img, scaling_ratio):
-    rows = 1000
-    cols = 500
+    cols = 1000 * scaling_ratio
+    rows = 500 * scaling_ratio
     original_pers = get_perspective(rows,cols,1.0)
     target_pers = get_perspective(rows,cols,scaling_ratio)
     

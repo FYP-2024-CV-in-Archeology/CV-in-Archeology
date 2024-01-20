@@ -6,7 +6,7 @@ import cv2 as cv
 import utils
 import rawpy
 import cropping
-from scaling import scaling
+from scaling import scaling, calc_scaling_ratio
 import color_correction
 import numpy as np
 
@@ -30,22 +30,22 @@ def run(input_path):
                         is24Checker = utils.detect24Checker(bgr.copy(), detector)  # must be bgr
                         # print(is24Checker)
                         #scaling part with no geocali
-                        img_scal= scaling(img_orig, is24Checker)
+                        scalingRatio = calc_scaling_ratio(img_orig, is24Checker)
+                        
                         # calculate the dpi of img_scal
 
-                        colorCorrection, _ = color_correction.color_correction(img_scal)
+                        colorCorrection, _ = color_correction.color_correction(img_orig)
                         # print(img_scal.shape)
                         # utils.showImage(colorCorrection)
-                        if is24Checker:
-                            sherdCnt = cropping.detectSherd(colorCorrection, is24Checker)
-                        else:
-                            sherdCnt = cropping.detectSherd(img_scal, is24Checker)
+                     
+                        sherdCnt = cropping.detectSherd(img_orig, is24Checker)
                         # draw contours
                         # img_cnt = img.copy()
                         # cv.drawContours(img_cnt, sherdCnt, -1, (0, 255, 0), 30)
                         # utils.showImage(img_cnt)
-                        cropped = cropping.crop(colorCorrection, sherdCnt)
-                        
+                        cropped = cropping.crop(colorCorrection, sherdCnt, scalingRatio)
+                        cropped = scaling(cropped, scalingRatio)
+                        print(cropped.shape)
                         # utils.showImage(cropped)
                     except Exception as e:
                         print(f'Cannot process image: {path}. Exception: {e}. Try no scaling.')

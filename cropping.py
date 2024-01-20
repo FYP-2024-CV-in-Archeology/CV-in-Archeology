@@ -1,19 +1,11 @@
 ## Mathmatics libraries
 import numpy as np
-import math
 
 ## Image Processing libraries
-import skimage
-from skimage import exposure
-
-import scipy.misc as misc
 import cv2 as cv
 import rawpy
-import imageio
 
-## Visual and plotting libraries
-import matplotlib.pyplot as plt
-
+## Utilities libraries
 import utils
 
 def Thresholding(img, adaptive):
@@ -127,10 +119,10 @@ def detectSherd(img, adaptive=True):
     return sherdCnt
 
 
-def crop(img, sherdCnt):
+def crop(img, sherdCnt, scalingRatio=1):
     # crop the minAreaRect
     img_crop, moment, vertical = cropMinAreaRect(img, sherdCnt)
-    crop = crop_from_moment(img_crop, moment, 1000, 500, vertical)
+    crop = crop_from_moment(img_crop, moment, round(1000 * scalingRatio), round(500 * scalingRatio), vertical)
 
     # rotate img_crop by 90 degree clockwise if it's vertical
     if crop.shape[0] > crop.shape[1]:
@@ -140,8 +132,9 @@ def crop(img, sherdCnt):
     return crop
 
 if __name__ == "__main__":
-    img = rawpy.imread('/Users/ryan/Desktop/CV-in-Archeology/test_images/1/photos/2.CR3')
+    img = rawpy.imread('test_images/34/photos/2.CR2')
     assert img is not None, "file could not be read, check with os.path.exists()"
     img = img.postprocess()
     # show the image in a window
-    # utils.showImage(Crop(img, False))
+    sherdCnt = detectSherd(img)
+    utils.showImage(crop(img, sherdCnt))
