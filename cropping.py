@@ -17,11 +17,7 @@ def Thresholding(img, adaptive):
 
     # morphological operations
     # resize image
-    if max(img.shape) >= 10000:
-        kernel_size = 9
-    elif max(img.shape) >= 6000:
-        kernel_size = 8
-    elif max(img.shape) >= 4000:
+    if max(img.shape) >= 1000:
         kernel_size = 6
     else:
         kernel_size = 5
@@ -41,7 +37,7 @@ def Thresholding(img, adaptive):
     return filled
 
 # Guess if a contour is a sherd
-def isSherd(cnt, patchPos):
+def isSherd4(cnt, patchPos):
     x, y, w, h = cv.boundingRect(cnt)
     for pos in patchPos.values():
         # Axis-Aligned Bounding Box
@@ -50,9 +46,21 @@ def isSherd(cnt, patchPos):
             return False
     return True
 
+# Guess if a contour is a sherd
+def isSherd24(cnt, patchPos):
+    for pt in cnt:
+        x, y = pt[0]
+        for pos in patchPos.values():
+            if not (x < pos[0] or x > (pos[0] + pos[2]) or y > (pos[1] + pos[3]) or y < pos[1]):
+                return False
+    return True
+
 def getSherdCnt(img, cnts, is24Checker):
     patchPos = utils.getCardsBlackPos(img.copy(), is24Checker)
-    cnts = list(filter(lambda cnt: isSherd(cnt, patchPos), cnts))
+    if is24Checker:
+        cnts = list(filter(lambda cnt: isSherd24(cnt, patchPos), cnts))
+    else:
+        cnts = list(filter(lambda cnt: isSherd4(cnt, patchPos), cnts))
     # checking if max() arg is empty also filter out the unqualified images (e.g. ones with no colorChecker)
     return max(cnts, key=cv.contourArea)
 
@@ -132,9 +140,9 @@ def crop(img, sherdCnt, scalingRatio=1):
     return crop
 
 if __name__ == "__main__":
-    img = rawpy.imread('test_images/34/photos/2.CR2')
+    img = rawpy.imread('test_images/201 /photos/1.CR3')
     assert img is not None, "file could not be read, check with os.path.exists()"
     img = img.postprocess()
     # show the image in a window
-    sherdCnt = detectSherd(img)
+    sherdCnt = detectSherd(img, False)
     utils.showImage(crop(img, sherdCnt))

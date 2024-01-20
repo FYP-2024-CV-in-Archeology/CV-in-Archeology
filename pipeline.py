@@ -37,7 +37,7 @@ def run(input_path):
                         colorCorrection, _ = color_correction.color_correction(img_orig)
                         # print(img_scal.shape)
                         # utils.showImage(colorCorrection)
-                     
+                        print(is24Checker)
                         sherdCnt = cropping.detectSherd(img_orig, is24Checker)
                         # draw contours
                         # img_cnt = img.copy()
