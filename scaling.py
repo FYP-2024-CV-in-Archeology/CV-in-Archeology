@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import math
 import utils
 from color_correction import color_correction
-#import utils
+
 
 def get_black_color_range():
     lower_black = np.array([0, 0, 0])
@@ -59,16 +59,13 @@ def get_perspective(rows,cols,scaling_ratio):
                        [rows/scaling_ratio,cols/scaling_ratio]])
     return pers
 
-def scaling(img, is24Checker):
+def calc_scaling_ratio(img, is24Checker):
     rows,cols,ch = img.shape
     if(not is24Checker):
+        #cnts = get_contours(img,False)
         return img
-    cnts = get_contours(img,True)
-    
-    #if is24Checker is True: 
-    #    cv.drawContours(mask, cnts, -1, 255, -1)
-    #else:
-    #    return img
+    else:
+        cnts = get_contours(img,True)
     
     if len(cnts) < 2: 
         raise Exception("No black squares detected.")
@@ -77,16 +74,22 @@ def scaling(img, is24Checker):
     #largest area refers to color card
     #color card used, since the size of color card is known
     color_corners = cv.approxPolyDP(cnts[0], 0.04 * color_para, True)
+    
     color_corners = rotate_coordinates(color_corners)
     
-    l1 = color_corners[3][0][1] - color_corners[0][0][1]
-    l2 = color_corners[3][0][0] - color_corners[0][0][0]
+    #print color corners    
+    l1 = (color_corners[3][0][1] - color_corners[0][0][1])
+    l2 = (color_corners[3][0][0] - color_corners[0][0][0])
     scaling_ratio = get_scaling_ratio(l1,l2)
     
-    original_pers = get_perspective(rows,cols,1.0)
-    
-    target_pers = get_perspective(rows,cols,scaling_ratio)
+    return scaling_ratio
 
+def scaling(img, scaling_ratio):
+    rows = 1000
+    cols = 500
+    original_pers = get_perspective(rows,cols,1.0)
+    target_pers = get_perspective(rows,cols,scaling_ratio)
+    
     geocal = cv.getPerspectiveTransform(original_pers,target_pers)
     dst = cv.warpPerspective(img,geocal,(int(cols/scaling_ratio),int(rows/scaling_ratio)),cv.INTER_LANCZOS4)
     return dst
