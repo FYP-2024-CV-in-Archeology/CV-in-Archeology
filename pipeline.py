@@ -64,8 +64,8 @@ def run(input_path):
                     # utils.showImage(cropped)
                     # convert to RGB and write into current folder
                     cropped = cv.cvtColor(cropped, cv.COLOR_BGR2RGB)
-                    cv.imwrite(f'out_24/{path.parent.parent.name}_{filename}.jpg', cropped)
+                    cv.imwrite(f'outputs/{path.parent.parent.name}_{filename}'.replace(' ', '') + '.jpg', cropped)
                     # exit the program
                     # exit(0)
 if __name__ == "__main__":
-    run("test24")
+    run("test_images")
