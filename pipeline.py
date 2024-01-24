@@ -37,7 +37,7 @@ def run(input_path):
                         colorCorrection, _ = color_correction.color_correction(img_orig)
                         # print(img_scal.shape)
                         # utils.showImage(colorCorrection)
-                        print(is24Checker)
+                        # print(is24Checker)
                         sherdCnt = cropping.detectSherd(img_orig, is24Checker)
                         # draw contours
                         # img_cnt = img.copy()
@@ -45,7 +45,7 @@ def run(input_path):
                         # utils.showImage(img_cnt)
                         cropped = cropping.crop(colorCorrection, sherdCnt, scalingRatio)
                         cropped = scaling(cropped, scalingRatio)
-                        print(cropped.shape)
+                        # print(cropped.shape)
                         # utils.showImage(cropped)
                     except Exception as e:
                         print(f'Cannot process image: {path}. Exception: {e}. Try no scaling.')
