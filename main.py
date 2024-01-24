@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog
+from pipeline import run
 
 def select_input_folder():
     folder_path = filedialog.askdirectory()
@@ -47,7 +48,7 @@ if __name__ == "__main__":
     output_tif_check.pack(pady=5, padx=10, anchor=tk.W)
 
     # Create an process button
-    install_button = tk.Button(window, text="process", command=lambda: print(input_folder_name.get()), state=tk.DISABLED)
+    install_button = tk.Button(window, text="process", command=lambda: run(input_folder_name.get()), state=tk.DISABLED)
     install_button.pack(pady=20, side=tk.RIGHT, padx=20, anchor=tk.SE)
 
     # Run the GUI

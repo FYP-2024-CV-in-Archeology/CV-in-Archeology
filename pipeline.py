@@ -56,10 +56,6 @@ def run(input_path):
 
                     if not cropped.any():
                         print(f'No output for {path}')
-                        img_copy2 = img.copy()
-                        colorCorrection_3, _ = color_correction.color_correction(img_copy2)
-                        sherdCnt = cropping.detectSherd(img_copy2, is24Checker)
-                        cropped = cropping.crop(colorCorrection_3, sherdCnt)
 
                     # utils.showImage(cropped)
                     # convert to RGB and write into current folder
