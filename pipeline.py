@@ -44,6 +44,9 @@ def run(input_path, output_tif=False):
                         # print(img_scal.shape)
                         # utils.showImage(colorCorrection)
                         # print(is24Checker)
+
+                        ########## img_scaled = scaling_before_cropping(colorCorrection, scalingRatio)
+                        
                         sherdCnt = cropping.detectSherd(img_orig, is24Checker)
                         # draw contours
                         # img_cnt = img.copy()
