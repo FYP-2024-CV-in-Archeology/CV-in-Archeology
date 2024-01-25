@@ -36,11 +36,12 @@ def get_contours(img,is24Checker):
     #sort contours based on size
     return cnts
 
-def get_scaling_ratio(w,h):
+def get_scaling_ratio(w,h,dpi):
     #directly get scaling ratio by comparing diagonal length
+    r = dpi / 900.0
     d = math.sqrt(w**2 + h**2)
     #3191.34617~3245.0 pixels for diagonal
-    scaling_ratio = d / 3191.347    
+    scaling_ratio = d / (3245.0 * r)
     return scaling_ratio
 
 def rotate_coordinates(crd):
@@ -59,7 +60,7 @@ def get_perspective(rows,cols,scaling_ratio):
                        [rows/scaling_ratio,cols/scaling_ratio]])
     return pers
 
-def calc_scaling_ratio(img, is24Checker):
+def calc_scaling_ratio(img, is24Checker, dpi):
     rows,cols,ch = img.shape
     if(not is24Checker):
         #cnts = get_contours(img,False)
@@ -80,11 +81,13 @@ def calc_scaling_ratio(img, is24Checker):
     #print color corners    
     l1 = (color_corners[3][0][1] - color_corners[0][0][1])
     l2 = (color_corners[3][0][0] - color_corners[0][0][0])
-    scaling_ratio = get_scaling_ratio(l1,l2)
+    scaling_ratio = get_scaling_ratio(l1,l2,dpi)
     
     return scaling_ratio
 
 def scaling(img, scaling_ratio):
+    #input cropped picture
+    #output a 1000 * 500 picture
     cols = 1000 * scaling_ratio
     rows = 500 * scaling_ratio
     original_pers = get_perspective(rows,cols,1.0)
@@ -93,7 +96,20 @@ def scaling(img, scaling_ratio):
     geocal = cv.getPerspectiveTransform(original_pers,target_pers)
     dst = cv.warpPerspective(img,geocal,(int(cols/scaling_ratio),int(rows/scaling_ratio)),cv.INTER_LANCZOS4)
     return dst
+
+def scaling_before_cropping(img, scaling_ratio):
+    #input original size picture
+    #output resized full scale picture
+    rows,cols,ch = img.shape
+    cols = cols * scaling_ratio
+    rows = rows * scaling_ratio
+    original_pers = get_perspective(rows,cols,1.0)
+    target_pers = get_perspective(rows,cols,scaling_ratio)
     
+    geocal = cv.getPerspectiveTransform(original_pers,target_pers)
+    dst = cv.warpPerspective(img,geocal,(int(cols/scaling_ratio),int(rows/scaling_ratio)),cv.INTER_LANCZOS4)
+    return dst
+
 if __name__ == "__main__":
     img = rawpy.imread('/Users/ryan/Desktop/CV-in-Archeology/test_images/1/photos/2.CR3')
     assert img is not None, "file could not be read, check with os.path.exists()"
