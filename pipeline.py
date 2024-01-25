@@ -36,7 +36,7 @@ def run(input_path, output_tif=False):
                         is24Checker = utils.detect24Checker(bgr.copy(), detector)  # must be bgr
                         # print(is24Checker)
                         #scaling part with no geocali
-                        scalingRatio = calc_scaling_ratio(img_orig, is24Checker)
+                        scalingRatio = calc_scaling_ratio(img_orig, is24Checker, 900)
                         
                         # calculate the dpi of img_scal
 
