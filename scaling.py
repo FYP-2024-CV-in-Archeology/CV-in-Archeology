@@ -88,6 +88,7 @@ def calc_scaling_ratio(img, is24Checker, dpi):
 def scaling(img, scaling_ratio):
     #input cropped picture
     #output a 1000 * 500 picture
+    #cols,rows = image shape
     cols = 1000 * scaling_ratio
     rows = 500 * scaling_ratio
     original_pers = get_perspective(rows,cols,1.0)
@@ -101,6 +102,7 @@ def scaling_before_cropping(img, scaling_ratio):
     #input original size picture
     #output resized full scale picture
     rows,cols,ch = img.shape
+    # get input picture size
     # cols = cols * scaling_ratio
     # rows = rows * scaling_ratio
     original_pers = get_perspective(rows,cols,1.0)
