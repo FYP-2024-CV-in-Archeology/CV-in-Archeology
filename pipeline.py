@@ -6,7 +6,7 @@ import cv2 as cv
 import utils
 import rawpy
 import cropping
-from scaling import scaling, calc_scaling_ratio
+from scaling import scaling, calc_scaling_ratio, scaling_before_cropping
 import color_correction
 import numpy as np
 
@@ -19,6 +19,9 @@ def run(input_path, output_tif=False):
             dir, filename = path.parent.name, path.stem
 
             if '.DS_Store' in filename:
+                continue
+
+            if 'pxrf' in filename:
                 continue
 
             filename = int(filename[0])
@@ -73,7 +76,7 @@ def run(input_path, output_tif=False):
                     # cv.imwrite(f'outputs/{path.parent.parent.name}_{filename}'.replace(' ', '') + '.jpg', cropped)
                     # print(f'{path.parent}/{filename}')
                     if output_tif:
-                        cv.imwrite(f'{path.parent}/{filename}' + '.tif', colorCorrection)
+                        cv.imwrite(f'{path.parent}/{filename}' + '.tif', scaling_before_cropping(colorCorrection, scalingRatio))
                     else:
                         cv.imwrite(f'{path.parent}/{filename}' + '.jpg', color_correction.imresize(colorCorrection, is24Checker, 250))
                         cv.imwrite(f'{path.parent}/{filename}' + '-1500.jpg', color_correction.imresize(colorCorrection, is24Checker, 1500))
