@@ -5,16 +5,6 @@ import cv2 as cv
 import matplotlib.pyplot as plt
 from skimage import img_as_ubyte
 
-def basic_showImg(img, size=4):
-    '''Shows an image in a numpy.array type. Syntax:
-        basic_showImg(img, size=4), where
-            img = image numpy.array;
-            size = the size to show the image. Its value is 4 by default.
-    '''
-    plt.figure(figsize=(size,size))
-    #img = np.rot90(img)
-    plt.imshow(img)
-    plt.show()
 
 def white_bal(img):
     result = cv.cvtColor(img, cv.COLOR_BGR2LAB)
@@ -71,8 +61,6 @@ def get_avg_colour_matrix(avgs):
     return avg_matrix
 
 def color_correction(img):
-    
-
     rgbImg = cv.cvtColor(img, cv.COLOR_RGB2BGR)
     rgbImg = percentile_whitebalance(rgbImg, 97.5)
 
