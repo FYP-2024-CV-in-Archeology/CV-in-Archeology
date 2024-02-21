@@ -51,6 +51,20 @@ def run(input_path, output_tif=False):
                         ########## img_scaled = scaling_before_cropping(colorCorrection, scalingRatio)
                         
                         sherdCnt = cropping.detectSherd(img_orig, is24Checker)
+
+                        rotate = 0
+                        sherd_bounding = cv.boundingRect(sherdCnt)
+                        x, y, w, h = sherd_bounding
+                        x_scale, y_scale, w_scale, h_scale = utils.getCardsBlackPos(img_orig)['black']
+
+                        if img_orig.shape[0] < img_orig.shape[1] and y < y_scale:
+                            rotate = 0
+                        else:
+                            if x > x_scale:
+                                rotate = 1
+                            if x < x_scale:
+                                rotate = -1
+
                         # draw contours
                         # img_cnt = img.copy()
                         # cv.drawContours(img_cnt, sherdCnt, -1, (0, 255, 0), 30)
@@ -75,6 +89,11 @@ def run(input_path, output_tif=False):
                     colorCorrection = cv.cvtColor(colorCorrection, cv.COLOR_BGR2RGB)
                     # cv.imwrite(f'outputs/{path.parent.parent.name}_{filename}'.replace(' ', '') + '.jpg', cropped)
                     # print(f'{path.parent}/{filename}')
+                    if rotate != 0:
+                        if rotate == 1:
+                            colorCorrection = cv.rotate(colorCorrection, cv.ROTATE_90_COUNTERCLOCKWISE)
+                        else:
+                            colorCorrection = cv.rotate(colorCorrection, cv.ROTATE_90_CLOCKWISE)
                     if output_tif:
                         cv.imwrite(f'{path.parent}/{filename}' + '.tif', scaling_before_cropping(colorCorrection, scalingRatio))
                     else:
@@ -87,4 +106,4 @@ def run(input_path, output_tif=False):
                     # exit the program
                     # exit(0)
 if __name__ == "__main__":
-    run("test_images")
+    run("test24")
