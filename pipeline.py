@@ -64,6 +64,8 @@ def run(input_path, output_tif=False):
                                 rotate = 1
                             if x < x_scale:
                                 rotate = -1
+                            if y > y_scale:
+                                rotate = 180
 
                         # draw contours
                         # img_cnt = img.copy()
@@ -92,8 +94,10 @@ def run(input_path, output_tif=False):
                     if rotate != 0:
                         if rotate == 1:
                             colorCorrection = cv.rotate(colorCorrection, cv.ROTATE_90_COUNTERCLOCKWISE)
-                        else:
+                        elif rotate == -1:
                             colorCorrection = cv.rotate(colorCorrection, cv.ROTATE_90_CLOCKWISE)
+                        elif rotate == 180:
+                            colorCorrection = cv.rotate(colorCorrection, cv.ROTATE_180)
                     if output_tif:
                         cv.imwrite(f'{path.parent}/{filename}' + '.tif', scaling_before_cropping(colorCorrection, scalingRatio))
                     else:
