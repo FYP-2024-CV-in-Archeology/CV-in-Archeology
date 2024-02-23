@@ -91,9 +91,9 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
                         else:
                             if x > x_scale:
                                 rotate = 1
-                            if x < x_scale:
+                            elif x < x_scale:
                                 rotate = -1
-                            if y > y_scale:
+                            elif y > y_scale:
                                 rotate = 180
 
                         # draw contours
