@@ -101,11 +101,6 @@ def color_correction(img):
 
         chartsRGB_np = np.array(chartsRGB).astype(float) / 255.0
         
-        try:
-            patchPos = utils.getCardsBlackPos(img.copy())
-        except Exception as e:
-            raise ValueError(f'Error getting patch positions: {e}')
-        
         checker = detector.getBestColorChecker()
         chartsRGB = checker.getChartsRGB()
 
