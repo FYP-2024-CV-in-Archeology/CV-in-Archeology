@@ -80,6 +80,22 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
                         ########## img_scaled = scaling_before_cropping(colorCorrection, scalingRatio)
                         
                         sherdCnt = cropping.detectSherd(img_orig, is24Checker)
+
+                        rotate = 0
+                        sherd_bounding = cv.boundingRect(sherdCnt)
+                        x, y, w, h = sherd_bounding
+                        x_scale, y_scale, w_scale, h_scale = utils.getCardsBlackPos(img_orig)['black']
+
+                        if img_orig.shape[0] < img_orig.shape[1] and y < y_scale:
+                            rotate = 0
+                        else:
+                            if x > x_scale:
+                                rotate = 1
+                            if x < x_scale:
+                                rotate = -1
+                            if y > y_scale:
+                                rotate = 180
+
                         # draw contours
                         # img_cnt = img.copy()
                         # cv.drawContours(img_cnt, sherdCnt, -1, (0, 255, 0), 30)
@@ -106,14 +122,21 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
                         colorCorrection = cv.cvtColor(colorCorrection, cv.COLOR_BGR2RGB)
                         # cv.imwrite(f'outputs/{path.parent.parent.name}_{filename}'.replace(' ', '') + '.jpg', cropped)
                         # print(f'{path.parent}/{filename}')
-                        if output_tif:
+                        if rotate != 0:
+                            if rotate == 1:
+                                colorCorrection = cv.rotate(colorCorrection, cv.ROTATE_90_COUNTERCLOCKWISE)
+                            elif rotate == -1:
+                                colorCorrection = cv.rotate(colorCorrection, cv.ROTATE_90_CLOCKWISE)
+                            elif rotate == 180:
+                                colorCorrection = cv.rotate(colorCorrection, cv.ROTATE_180)
+                    if output_tif:
                             write(f'{path.parent}/{filename}' + '.tif', scaling_before_cropping(colorCorrection, scalingRatio))
-                        for size in sizes:
-                            write(f'{path.parent}/{filename}' + f'-{size}.jpg', color_correction.imresize(colorCorrection, is24Checker, size))
-                        write(f'{path.parent}/{filename + 2}' + '.tif', cropped)
-                        write(f'{path.parent}/{filename + 2}' + '.jpg', cropped)
-                        log.insert(tk.END, f'Done!\n')
+                    for size in sizes:
+                        write(f'{path.parent}/{filename}' + f'-{size}.jpg', color_correction.imresize(colorCorrection, is24Checker, size))
+                    write(f'{path.parent}/{filename + 2}' + '.tif', cropped)
+                    write(f'{path.parent}/{filename + 2}' + '.jpg', cropped)
+                    log.insert(tk.END, f'Done!\n')
     done_btn.config(state=tk.NORMAL)
     process_btn.config(state=tk.NORMAL)
 if __name__ == "__main__":
-    run("test_images")
+    run("test24")
