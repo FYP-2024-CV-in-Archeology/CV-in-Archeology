@@ -74,7 +74,7 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
                         
                         # calculate the dpi of img_scal
 
-                        colorCorrection, _ = color_correction.color_correction(img_orig)
+                        colorCorrection = color_correction.color_correction(img_orig, detector, is24Checker) # detector and 24checker reused
                         # print(img_scal.shape)
                         # utils.showImage(colorCorrection)
                         # print(is24Checker)
@@ -86,7 +86,7 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
                         rotate = 0
                         sherd_bounding = cv.boundingRect(sherdCnt)
                         x, y, w, h = sherd_bounding
-                        x_scale, y_scale, w_scale, h_scale = utils.getCardsBlackPos(img_orig)['black']
+                        x_scale, y_scale, w_scale, h_scale = utils.getCardsBlackPos(img_orig)['black'] # !!!! can be optimized
 
                         if img_orig.shape[0] < img_orig.shape[1] and y < y_scale:
                             rotate = 0
