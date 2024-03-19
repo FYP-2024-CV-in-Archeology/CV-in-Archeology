@@ -31,7 +31,7 @@ def process(input_folder, output_tif):
     # disable process button
     process_btn.config(state=tk.DISABLED)
 
-    t = Thread(target=run, args=(input_folder, output_tif, log, done, process_btn, skip_files_start, skip_files_end, sizes))
+    t = Thread(target=run, args=(input_folder, output_tif, log, done, process_btn, skip_files_start.get(), skip_files_end.get(), sizes))
     t.start()
 
 if __name__ == "__main__":
