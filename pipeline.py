@@ -10,6 +10,7 @@ from scaling import scaling, calc_scaling_ratio, scaling_before_cropping
 import color_correction
 import numpy as np
 import tkinter as tk
+import cProfile
 
 def write(path, img):
     # if path exists, prompt user to overwrite
@@ -31,16 +32,14 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
             
             dir, filename = path.parent.name, path.stem
 
-            if '.DS_Store' in filename:
+            if '.DS_Store' in filename or 'pxrf' in filename:
                 continue
 
-            if 'pxrf' in filename:
-                continue
-
-            filename = int(filename[0])
+            filename = filename[0]
             
             if dir > '478130_4419430_8_20':
-                if 'cr' in path.suffix.lower() and (filename == 2 or filename == 1):
+                if 'cr' in path.suffix.lower() and (filename == '2' or filename == '1'):
+                    filename = int(filename)
                     try:
                         # read img
                         print(path)
@@ -145,4 +144,4 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
         done_btn.config(state=tk.NORMAL)
         process_btn.config(state=tk.NORMAL)
 if __name__ == "__main__":
-    run(r"e:\Users\yytu\Desktop\Test", sizes={1000})
+    cProfile.run("run(r'e:\\Users\\yytu\\Desktop\\Test', sizes={1000})")
