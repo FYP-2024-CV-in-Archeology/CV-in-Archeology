@@ -159,11 +159,11 @@ def color_correction(img, detector, is24Checker): # img is rgb
     corrected_image_svd = cv.transform(img, color_correction_matrix)
 
     #to_return = cv.cvtColor(corrected_image_svd, cv.COLOR_RGB2BGR)
-    to_return_white_balanced = percentile_whitebalance(corrected_image_svd, 97.5)
+    # to_return_white_balanced = percentile_whitebalance(corrected_image_svd, 97.5)
 
-    to_return_white_balanced = cv.add(to_return_white_balanced, (10, 10, 10, 0)) # add brightness
+    # to_return_white_balanced = cv.add(to_return_white_balanced, (10, 10, 10, 0)) # add brightness
     
-    return to_return_white_balanced
+    return corrected_image_svd
 
 
 if __name__ == "__main__":

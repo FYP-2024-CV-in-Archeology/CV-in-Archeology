@@ -79,6 +79,10 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
                         # utils.showImage(colorCorrection)
                         # print(is24Checker)
 
+                        if not is24Checker:
+                            colorCorrection = color_correction.percentile_whitebalance(colorCorrection, 97.5)
+                            colorCorrection = cv.add(colorCorrection, (10,10,10,0))
+
                         ########## img_scaled = scaling_before_cropping(colorCorrection, scalingRatio)
                         
                         sherdCnt = cropping.detectSherd(img_orig, is24Checker)
