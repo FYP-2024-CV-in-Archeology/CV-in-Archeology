@@ -17,6 +17,7 @@ from threading import Thread
 from queue import Queue
 
 
+
 def write(path, img):
     # if path exists, prompt user to overwrite
     if os.path.exists(path):
@@ -54,7 +55,7 @@ def detect24_thread(queue_in, queue_out):
     logging.info(f"Started!")
     while True:
         raw_img = queue_in.get()
-        logging.info(f"Got img")
+        # logging.info(f"Got img")
         if raw_img is None:
             queue_out.put(raw_img)
             break
@@ -63,11 +64,90 @@ def detect24_thread(queue_in, queue_out):
         is24Checker = utils.detect24Checker(cv.cvtColor(raw_img.copy(), cv.COLOR_RGB2BGR), detector)  # must be bgr
         scalingRatio = calc_scaling_ratio(raw_img.copy(), is24Checker, 900)
 
+        # out = [raw_img, is24Checker, scalingRatio, False]
         out = [raw_img, is24Checker, scalingRatio]
         queue_out.put(out) 
         logging.info(f"Added {[is24Checker, scalingRatio]}")
 
     logging.info(f"Done!")
+
+def whitebalance_thread(queue_in, queue_out):
+    logging.info(f"Started!")
+    while True:
+        input = queue_in.get()
+        # raw_img, is24Checker, scalingRatio, flag = None, None, None, False
+        raw_img, is24Checker, scalingRatio = None, None, None
+        if input is None:
+            queue_out.put(raw_img)
+            break
+        else:
+            # raw_img, is24Checker, scalingRatio, flag = input
+            raw_img, is24Checker, scalingRatio = input
+        # logging.info(f"Got img")
+
+        if not is24Checker:
+            whiteBalancedImg = color_correction.percentile_whitebalance(raw_img, 97.5)
+            # if flag:
+            #     whiteBalancedImg = cv.add(whiteBalancedImg, (10,10,10,0))
+
+        out = [whiteBalancedImg, is24Checker, scalingRatio]
+        queue_out.put(out)
+        logging.info(f"Added {[is24Checker, scalingRatio]}")
+
+    logging.info(f"Done!")
+
+def color_correction_thread(queue_in, queue_out):
+    logging.info(f"Started!")
+    while True:
+        input = queue_in.get()
+        whiteBalancedImg, is24Checker, scalingRatio = None, None, None
+        if input is None:
+            queue_out.put(whiteBalancedImg)
+            break
+        else:
+            whiteBalancedImg, is24Checker, scalingRatio = input
+        # logging.info(f"Got img")
+
+        colorCorrection = color_correction.color_correction(whiteBalancedImg, detector, is24Checker)
+        # out = [colorCorrection, is24Checker, scalingRatio, True]
+        out = [colorCorrection, is24Checker, scalingRatio]
+        queue_out.put(out)
+        logging.info(f"Added {[is24Checker, scalingRatio]}")
+
+    logging.info(f"Done!")
+
+def whitebalance_thread2(queue_in, queue_out):
+    logging.info(f"Started!")
+    while True:
+        input = queue_in.get()
+        colorCorrection, is24Checker, scalingRatio = None, None, None
+        # logging.info(f"Got img")
+        if input is None:
+            queue_out.put(colorCorrection)
+            break
+        else:
+            colorCorrection, is24Checker, scalingRatio = input
+
+        if not is24Checker:
+            colorCorrection = color_correction.percentile_whitebalance(colorCorrection, 97.5)
+            colorCorrection = cv.add(colorCorrection, (10,10,10,0))
+        out = [colorCorrection, is24Checker, scalingRatio]
+        queue_out.put(out)
+        logging.info(f"Added {[is24Checker, scalingRatio]}")
+
+    logging.info(f"Done!")
+    
+def cropping_thread(queue_in):
+    logging.info(f"Started!")
+    while True:
+        input = queue_in.get()
+        logging.info(f"Got img")
+        if input is None:
+            break
+
+    logging.info(f"Done!")
+
+
         
 
 def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None, skip_files_start=0, skip_files_end=0, sizes=None):
@@ -192,6 +272,7 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
 if __name__ == "__main__":
     # cProfile.run("run(r'e:\\Users\\yytu\\Desktop\\Test', sizes={1000})")
     # configure the log handler
+    detector = cv.mcc.CCheckerDetector_create()
     handler = logging.StreamHandler(stream=sys.stdout)
     handler.setLevel(logging.INFO)
     handler.setFormatter(logging.Formatter('[%(levelname)s] [%(threadName)s] %(message)s'))
@@ -204,7 +285,7 @@ if __name__ == "__main__":
     # create queue between first two tasks
     queue1_2 = Queue()
     # create thread for first task
-    thread1 = Thread(target=imread_thread, args=("e:\\Users\\yytu\\Desktop\\Test", queue1_2), name='Task1')
+    thread1 = Thread(target=imread_thread, args=("/Users/allenz/Desktop/CV-in-Archeology/test", queue1_2), name='Task1')
     thread1.start()
     # create queue between second and third tasks
     queue2_3 = Queue()
@@ -212,7 +293,26 @@ if __name__ == "__main__":
     thread2 = Thread(target=detect24_thread, args=(queue1_2,queue2_3), name='Task2')
     thread2.start()
 
+    queue3_4 = Queue()
+    thread3_whitebalance1 = Thread(target=whitebalance_thread, args=(queue2_3,queue3_4), name='Task3')
+    thread3_whitebalance1.start()
+
+    queue4_5 = Queue()
+    thread4_color_correction = Thread(target=color_correction_thread, args=(queue3_4,queue4_5), name='Task4')
+    thread4_color_correction.start()
+
+    queue5_6 = Queue()
+    thread5_whitebalance2 = Thread(target=whitebalance_thread2, args=(queue4_5,queue5_6), name='Task5')
+    thread5_whitebalance2.start()
+
+    thread6_cropping = Thread(target=cropping_thread, args=(queue5_6,), name='Task6')
+    thread6_cropping.start()
+
     # wait for all threads to finish
     thread1.join()
     thread2.join()
+    thread3_whitebalance1.join()
+    thread4_color_correction.join()
+    thread5_whitebalance2.join()
+    thread6_cropping.join()
 
