@@ -130,7 +130,7 @@ def color_correction(img, detector, is24Checker): # img is rgb
         'white': np.array([0.0, 0.0, 0.0])
     }
 
-    white_balanced = percentile_whitebalance(img, 97.5)
+    white_balanced = img.copy()
     hsv_image = cv.cvtColor(white_balanced, cv.COLOR_RGB2HSV)
 
     for colour in utils.COLOURS:
