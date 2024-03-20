@@ -11,6 +11,11 @@ import color_correction
 import numpy as np
 import tkinter as tk
 import cProfile
+import logging
+from time import sleep
+from threading import Thread
+from queue import Queue
+
 
 def write(path, img):
     # if path exists, prompt user to overwrite
@@ -23,23 +28,63 @@ def write(path, img):
     else:
         cv.imwrite(path, img)
 
+def imread_thread(input_path, queue_out):
+    logging.info(f"Started!")
+    
+    for dirpath, dirnames, filenames in os.walk(input_path):
+        dirnames.sort()
+        for file in filenames:
+            path = Path(dirpath) / file
+            dir, filename = path.parent.name, path.stem
+            
+            if '.DS_Store' in filename or 'pxrf' in filename:
+                continue
+            filename = filename[0]
+
+            if dir > '478130_4419430_8_20':
+                if 'cr' in path.suffix.lower() and (filename == '2' or filename == '1'):
+                    queue_out.put(utils.imread(path))
+                    logging.info(f"Added {path}")
+                    # sleep(999999.9999)
+
+    logging.info(f"Done!")
+    queue_out.put(None)
+
+def detect24_thread(queue_in, queue_out):
+    logging.info(f"Started!")
+    while True:
+        raw_img = queue_in.get()
+        logging.info(f"Got img")
+        if raw_img is None:
+            queue_out.put(raw_img)
+            break
+
+        detector = cv.mcc.CCheckerDetector_create()
+        is24Checker = utils.detect24Checker(cv.cvtColor(raw_img.copy(), cv.COLOR_RGB2BGR), detector)  # must be bgr
+        scalingRatio = calc_scaling_ratio(raw_img.copy(), is24Checker, 900)
+
+        out = [raw_img, is24Checker, scalingRatio]
+        queue_out.put(out) 
+        logging.info(f"Added {[is24Checker, scalingRatio]}")
+
+    logging.info(f"Done!")
+        
+
 def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None, skip_files_start=0, skip_files_end=0, sizes=None):
     print(sizes)
     for dirpath, dirnames, filenames in os.walk(input_path):
         dirnames.sort()
         for file in filenames:
             path = Path(dirpath) / file
-            
             dir, filename = path.parent.name, path.stem
-
             if '.DS_Store' in filename or 'pxrf' in filename:
                 continue
-
             filename = filename[0]
             
             if dir > '478130_4419430_8_20':
                 if 'cr' in path.suffix.lower() and (filename == '2' or filename == '1'):
                     filename = int(filename)
+
                     try:
                         # read img
                         print(path)
@@ -62,21 +107,17 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
                             continue
                         if log:
                             log.insert(tk.END, f'Processing {path}...\n')
-                        bgr = cv.cvtColor(img, cv.COLOR_RGB2BGR)
-                        bgr = color_correction.percentile_whitebalance(bgr, 97.5)
 
                         detector = cv.mcc.CCheckerDetector_create()
-                        is24Checker = utils.detect24Checker(bgr.copy(), detector)  # must be bgr
+                        is24Checker = utils.detect24Checker(cv.cvtColor(img, cv.COLOR_RGB2BGR), detector)  # must be bgr
                         # print(is24Checker)
                         #scaling part with no geocali
                         scalingRatio = calc_scaling_ratio(img_orig, is24Checker, 900)
                         
                         # calculate the dpi of img_scal
-
+                        if not is24Checker:
+                            img_orig = color_correction.percentile_whitebalance(img_orig, 97.5)
                         colorCorrection = color_correction.color_correction(img_orig, detector, is24Checker) # detector and 24checker reused
-                        # print(img_scal.shape)
-                        # utils.showImage(colorCorrection)
-                        # print(is24Checker)
 
                         if not is24Checker:
                             colorCorrection = color_correction.percentile_whitebalance(colorCorrection, 97.5)
@@ -127,8 +168,7 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
                         # convert to RGB and write into current folder
                         cropped = cv.cvtColor(cropped, cv.COLOR_BGR2RGB)
                         colorCorrection = cv.cvtColor(colorCorrection, cv.COLOR_BGR2RGB)
-                        # cv.imwrite(f'outputs/{path.parent.parent.name}_{filename}'.replace(' ', '') + '.jpg', cropped)
-                        # print(f'{path.parent}/{filename}')
+                       
                         if rotate != 0:
                             if rotate == 1:
                                 colorCorrection = cv.rotate(colorCorrection, cv.ROTATE_90_COUNTERCLOCKWISE)
@@ -142,10 +182,37 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
                         write(f'{path.parent}/{filename}' + f'-{size}.jpg', color_correction.imresize(colorCorrection, is24Checker, size))
                     write(f'{path.parent}/{filename + 2}' + '.tif', cropped)
                     write(f'{path.parent}/{filename + 2}' + '.jpg', cropped)
+
                     if log:
                         log.insert(tk.END, f'Done!\n')
+
     if (done_btn and process_btn):
         done_btn.config(state=tk.NORMAL)
         process_btn.config(state=tk.NORMAL)
 if __name__ == "__main__":
-    cProfile.run("run(r'e:\\Users\\yytu\\Desktop\\Test', sizes={1000})")
+    # cProfile.run("run(r'e:\\Users\\yytu\\Desktop\\Test', sizes={1000})")
+    # configure the log handler
+    handler = logging.StreamHandler(stream=sys.stdout)
+    handler.setLevel(logging.INFO)
+    handler.setFormatter(logging.Formatter('[%(levelname)s] [%(threadName)s] %(message)s'))
+    # add the log handler
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    logger.addHandler(handler)
+
+
+    # create queue between first two tasks
+    queue1_2 = Queue()
+    # create thread for first task
+    thread1 = Thread(target=imread_thread, args=("e:\\Users\\yytu\\Desktop\\Test", queue1_2), name='Task1')
+    thread1.start()
+    # create queue between second and third tasks
+    queue2_3 = Queue()
+    # create thread for second task
+    thread2 = Thread(target=detect24_thread, args=(queue1_2,queue2_3), name='Task2')
+    thread2.start()
+
+    # wait for all threads to finish
+    thread1.join()
+    thread2.join()
+
