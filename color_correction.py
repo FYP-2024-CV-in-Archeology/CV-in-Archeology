@@ -6,16 +6,16 @@ import matplotlib.pyplot as plt
 from skimage import img_as_ubyte
 
 
-def white_bal(img):
-    result = cv.cvtColor(img, cv.COLOR_BGR2LAB)
-    avg_a = np.average(result[:, :, 1])
-    avg_b = np.average(result[:, :, 2])
-    result[:, :, 1] = result[:, :, 1] - \
-        ((avg_a - 128) * (result[:, :, 0] / 255.0) * 1.1)
-    result[:, :, 2] = result[:, :, 2] - \
-        ((avg_b - 128) * (result[:, :, 0] / 255.0) * 1.1)
-    result = cv.cvtColor(result, cv.COLOR_LAB2BGR)
-    return result
+# def white_bal(img):
+#     result = cv.cvtColor(img, cv.COLOR_BGR2LAB)
+#     avg_a = np.average(result[:, :, 1])
+#     avg_b = np.average(result[:, :, 2])
+#     result[:, :, 1] = result[:, :, 1] - \
+#         ((avg_a - 128) * (result[:, :, 0] / 255.0) * 1.1)
+#     result[:, :, 2] = result[:, :, 2] - \
+#         ((avg_b - 128) * (result[:, :, 0] / 255.0) * 1.1)
+#     result = cv.cvtColor(result, cv.COLOR_LAB2BGR)
+#     return result
 
 
 def percentile_whitebalance(image, percentile_value):
@@ -60,18 +60,17 @@ def get_avg_colour_matrix(avgs):
     avg_matrix = np.vstack(list_of_avgs)
     return avg_matrix
 
-def color_correction(img):
-    rgbImg = cv.cvtColor(img, cv.COLOR_RGB2BGR)
-    rgbImg = percentile_whitebalance(rgbImg, 97.5)
+def color_correction(img, detector, is24Checker): # img is rgb
+    # bgrImg = cv.cvtColor(img, cv.COLOR_RGB2BGR)
+    # brgImg = percentile_whitebalance(bgrImg, 97.5)
 
-    rgb = cv.cvtColor(rgbImg, cv.COLOR_BGR2RGB).astype(np.float64) / 255.0
+    rgb = img.copy().astype(np.float64) / 255.0 # can be ignored?
 
-    detector = cv.mcc.CCheckerDetector_create()
+    # detector = cv.mcc.CCheckerDetector_create()
 
-    is24Checker = utils.detect24Checker(rgbImg.copy(), detector)
+    # is24Checker = utils.detect24Checker(bgrImg.copy(), detector)
 
     if is24Checker:
-
         chartsRGB = [
             [[115, 83, 68]],
             [[196, 147, 127]],
@@ -117,7 +116,7 @@ def color_correction(img):
 
         calibrated = toOpenCVU8(calibrated.copy())
 
-        return calibrated, is24Checker
+        return calibrated
 
 
     img = img.astype(np.uint8)
@@ -160,11 +159,11 @@ def color_correction(img):
     corrected_image_svd = cv.transform(img, color_correction_matrix)
 
     #to_return = cv.cvtColor(corrected_image_svd, cv.COLOR_RGB2BGR)
-    to_return_white_balanced = percentile_whitebalance(corrected_image_svd, 97.5)
+    # to_return_white_balanced = percentile_whitebalance(corrected_image_svd, 97.5)
 
-    to_return_white_balanced = cv.add(to_return_white_balanced, (10, 10, 10, 0)) # add brightness
+    # to_return_white_balanced = cv.add(to_return_white_balanced, (10, 10, 10, 0)) # add brightness
     
-    return to_return_white_balanced, is24Checker
+    return corrected_image_svd
 
 
 if __name__ == "__main__":
