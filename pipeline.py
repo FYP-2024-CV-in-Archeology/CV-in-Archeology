@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 sys.path.append('../')
 from pathlib import Path
 import cv2 as cv
@@ -11,10 +12,9 @@ import color_correction
 import numpy as np
 import tkinter as tk
 import cProfile
-import logging
 from time import sleep
-from threading import Thread
-from queue import Queue
+from multiprocessing import Process
+from multiprocessing import Queue
 
 
 
@@ -27,128 +27,7 @@ def write(path, img):
         if overwrite:
             cv.imwrite(path, img)
     else:
-        cv.imwrite(path, img)
-
-def imread_thread(input_path, queue_out):
-    logging.info(f"Started!")
-    
-    for dirpath, dirnames, filenames in os.walk(input_path):
-        dirnames.sort()
-        for file in filenames:
-            path = Path(dirpath) / file
-            dir, filename = path.parent.name, path.stem
-            
-            if '.DS_Store' in filename or 'pxrf' in filename:
-                continue
-            filename = filename[0]
-
-            if dir > '478130_4419430_8_20':
-                if 'cr' in path.suffix.lower() and (filename == '2' or filename == '1'):
-                    queue_out.put(utils.imread(path))
-                    logging.info(f"Added {path}")
-                    # sleep(999999.9999)
-
-    logging.info(f"Done!")
-    queue_out.put(None)
-
-def detect24_thread(queue_in, queue_out):
-    logging.info(f"Started!")
-    while True:
-        raw_img = queue_in.get()
-        # logging.info(f"Got img")
-        if raw_img is None:
-            queue_out.put(raw_img)
-            break
-
-        detector = cv.mcc.CCheckerDetector_create()
-        is24Checker = utils.detect24Checker(cv.cvtColor(raw_img.copy(), cv.COLOR_RGB2BGR), detector)  # must be bgr
-        scalingRatio = calc_scaling_ratio(raw_img.copy(), is24Checker, 900)
-
-        # out = [raw_img, is24Checker, scalingRatio, False]
-        out = [raw_img, is24Checker, scalingRatio]
-        queue_out.put(out) 
-        logging.info(f"Added {[is24Checker, scalingRatio]}")
-
-    logging.info(f"Done!")
-
-def whitebalance_thread(queue_in, queue_out):
-    logging.info(f"Started!")
-    while True:
-        input = queue_in.get()
-        # raw_img, is24Checker, scalingRatio, flag = None, None, None, False
-        raw_img, is24Checker, scalingRatio = None, None, None
-        if input is None:
-            queue_out.put(raw_img)
-            break
-        else:
-            # raw_img, is24Checker, scalingRatio, flag = input
-            raw_img, is24Checker, scalingRatio = input
-        # logging.info(f"Got img")
-
-        if not is24Checker:
-            whiteBalancedImg = color_correction.percentile_whitebalance(raw_img, 97.5)
-            # if flag:
-            #     whiteBalancedImg = cv.add(whiteBalancedImg, (10,10,10,0))
-
-        out = [whiteBalancedImg, is24Checker, scalingRatio]
-        queue_out.put(out)
-        logging.info(f"Added {[is24Checker, scalingRatio]}")
-
-    logging.info(f"Done!")
-
-def color_correction_thread(queue_in, queue_out):
-    logging.info(f"Started!")
-    while True:
-        input = queue_in.get()
-        whiteBalancedImg, is24Checker, scalingRatio = None, None, None
-        if input is None:
-            queue_out.put(whiteBalancedImg)
-            break
-        else:
-            whiteBalancedImg, is24Checker, scalingRatio = input
-        # logging.info(f"Got img")
-
-        colorCorrection = color_correction.color_correction(whiteBalancedImg, detector, is24Checker)
-        # out = [colorCorrection, is24Checker, scalingRatio, True]
-        out = [colorCorrection, is24Checker, scalingRatio]
-        queue_out.put(out)
-        logging.info(f"Added {[is24Checker, scalingRatio]}")
-
-    logging.info(f"Done!")
-
-def whitebalance_thread2(queue_in, queue_out):
-    logging.info(f"Started!")
-    while True:
-        input = queue_in.get()
-        colorCorrection, is24Checker, scalingRatio = None, None, None
-        # logging.info(f"Got img")
-        if input is None:
-            queue_out.put(colorCorrection)
-            break
-        else:
-            colorCorrection, is24Checker, scalingRatio = input
-
-        if not is24Checker:
-            colorCorrection = color_correction.percentile_whitebalance(colorCorrection, 97.5)
-            colorCorrection = cv.add(colorCorrection, (10,10,10,0))
-        out = [colorCorrection, is24Checker, scalingRatio]
-        queue_out.put(out)
-        logging.info(f"Added {[is24Checker, scalingRatio]}")
-
-    logging.info(f"Done!")
-    
-def cropping_thread(queue_in):
-    logging.info(f"Started!")
-    while True:
-        input = queue_in.get()
-        logging.info(f"Got img")
-        if input is None:
-            break
-
-    logging.info(f"Done!")
-
-
-        
+        cv.imwrite(path, img)  
 
 def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None, skip_files_start=0, skip_files_end=0, sizes=None):
     print(sizes)
@@ -160,7 +39,6 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
             if '.DS_Store' in filename or 'pxrf' in filename:
                 continue
             filename = filename[0]
-            
             if dir > '478130_4419430_8_20':
                 if 'cr' in path.suffix.lower() and (filename == '2' or filename == '1'):
                     filename = int(filename)
@@ -205,22 +83,9 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
 
                         ########## img_scaled = scaling_before_cropping(colorCorrection, scalingRatio)
                         
-                        sherdCnt = cropping.detectSherd(img_orig, is24Checker)
+                        sherdCnt, patchPos = cropping.detectSherd(img_orig, is24Checker)
 
-                        rotate = 0
-                        sherd_bounding = cv.boundingRect(sherdCnt)
-                        x, y, w, h = sherd_bounding
-                        x_scale, y_scale, w_scale, h_scale = utils.getCardsBlackPos(img_orig)['black'] # !!!! can be optimized
-
-                        if img_orig.shape[0] < img_orig.shape[1] and y < y_scale:
-                            rotate = 0
-                        else:
-                            if x > x_scale:
-                                rotate = 1
-                            elif x < x_scale:
-                                rotate = -1
-                            elif y > y_scale:
-                                rotate = 180
+                        rotate = utils.detect_rotation(img_orig, sherdCnt, patchPos)
 
                         # draw contours
                         # img_cnt = img.copy()
@@ -259,7 +124,7 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
                     if output_tif:
                             write(f'{path.parent}/{filename}' + '.tif', scaling_before_cropping(colorCorrection, scalingRatio))
                     for size in sizes:
-                        write(f'{path.parent}/{filename}' + f'-{size}.jpg', color_correction.imresize(colorCorrection, is24Checker, size))
+                        write(f'{path.parent}/{filename}' + f'-{size}.jpg', color_correction.imresize(colorCorrection, size))
                     write(f'{path.parent}/{filename + 2}' + '.tif', cropped)
                     write(f'{path.parent}/{filename + 2}' + '.jpg', cropped)
 
@@ -267,52 +132,11 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
                         log.insert(tk.END, f'Done!\n')
 
     if (done_btn and process_btn):
-        done_btn.config(state=tk.NORMAL)
+        done_btn.config(state=tk.NORMAL)    
         process_btn.config(state=tk.NORMAL)
 if __name__ == "__main__":
-    # cProfile.run("run(r'e:\\Users\\yytu\\Desktop\\Test', sizes={1000})")
-    # configure the log handler
-    detector = cv.mcc.CCheckerDetector_create()
-    handler = logging.StreamHandler(stream=sys.stdout)
-    handler.setLevel(logging.INFO)
-    handler.setFormatter(logging.Formatter('[%(levelname)s] [%(threadName)s] %(message)s'))
-    # add the log handler
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    logger.addHandler(handler)
-
-
-    # create queue between first two tasks
-    queue1_2 = Queue()
-    # create thread for first task
-    thread1 = Thread(target=imread_thread, args=("/Users/allenz/Desktop/CV-in-Archeology/test", queue1_2), name='Task1')
-    thread1.start()
-    # create queue between second and third tasks
-    queue2_3 = Queue()
-    # create thread for second task
-    thread2 = Thread(target=detect24_thread, args=(queue1_2,queue2_3), name='Task2')
-    thread2.start()
-
-    queue3_4 = Queue()
-    thread3_whitebalance1 = Thread(target=whitebalance_thread, args=(queue2_3,queue3_4), name='Task3')
-    thread3_whitebalance1.start()
-
-    queue4_5 = Queue()
-    thread4_color_correction = Thread(target=color_correction_thread, args=(queue3_4,queue4_5), name='Task4')
-    thread4_color_correction.start()
-
-    queue5_6 = Queue()
-    thread5_whitebalance2 = Thread(target=whitebalance_thread2, args=(queue4_5,queue5_6), name='Task5')
-    thread5_whitebalance2.start()
-
-    thread6_cropping = Thread(target=cropping_thread, args=(queue5_6,), name='Task6')
-    thread6_cropping.start()
-
-    # wait for all threads to finish
-    thread1.join()
-    thread2.join()
-    thread3_whitebalance1.join()
-    thread4_color_correction.join()
-    thread5_whitebalance2.join()
-    thread6_cropping.join()
+   start_time = time.time()
+   run('test', sizes={1000})
+   print(f"--- {time.time() - start_time} seconds ---")
+  
 

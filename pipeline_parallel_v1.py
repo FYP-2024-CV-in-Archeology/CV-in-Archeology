@@ -19,7 +19,7 @@ from multiprocessing import Pipe
 import utils
 from cropping import detectSherd, crop
 from scaling import scaling, calc_scaling_ratio
-from color_correction import color_correction, percentile_whitebalance
+from color_correction import color_correction, percentile_whitebalance, imresize
 
 # process to read images from file system
 def imread(input_path, queue_out):
@@ -39,7 +39,6 @@ def imread(input_path, queue_out):
                 if 'cr' in path.suffix.lower() and (filename == '2' or filename == '1'):
                     queue_out.put([path, utils.imread(path)])
                     print(f"imread finished {path}")
-                    # sleep(999999.9999)
 
     print(f"imread Done!")
     queue_out.put(None)
@@ -73,13 +72,15 @@ def whitebalance(queue_in, queue_out):
         data = queue_in.get()
         if data is None:
             queue_out.put(data)
+            queue_out.put(data)
             break
         
         path, raw_img, is24, scalin_ratio = data
 
         white_balance_img = raw_img if is24 else percentile_whitebalance(raw_img, 97.5)            
-        sherd_cnt = detectSherd(white_balance_img, is24)
-        queue_out.put([path, white_balance_img, is24, scalin_ratio, sherd_cnt])
+        sherd_cnt, patch_pos = detectSherd(white_balance_img, is24)
+        rotation = utils.detect_rotation(white_balance_img, sherd_cnt, patch_pos)
+        queue_out.put([path, white_balance_img, is24, scalin_ratio, sherd_cnt, rotation])
         print(f"Whitebalance finished {path}")
 
     print(f"Whitebalance Done!")
@@ -94,38 +95,41 @@ def color_correct(queue_in, queue_out):
             queue_out.put(data)
             break
 
-        path, white_balance_img, is24, scalin_ratio, sherd_cnt = data
+        path, white_balance_img, is24, scalin_ratio, sherd_cnt, rotation = data
         print(f"Color Correcting {path}")
         detector = cv.mcc.CCheckerDetector_create()
         is24Checker = utils.detect24Checker(cv.cvtColor(white_balance_img, cv.COLOR_RGB2BGR), detector)
         color_correct_img = color_correction(white_balance_img, detector, is24Checker)
-        
-        queue_out.put([path, color_correct_img, is24, scalin_ratio, sherd_cnt])
+        queue_out.put([path, color_correct_img, is24, scalin_ratio, sherd_cnt, rotation])
         print(f"Color Corrected {path}")
 
     print(f"Color Correction Done!")
 
 # process to whitebalance images and also detect sherd contour
-def whitebalance2(queue_in, queue_out):
+def write_corrcted(queue_in, queue_out, sizes):
     print(f"Whitebalance Started!")
-
-    while True:
+    done = 0
+    while done < 2:
         data = queue_in.get()
         if data is None:
-            queue_out.put(data)
-            break
+            done += 1
+            continue
         
-        path, color_correct_img, is24, scalin_ratio, sherd_cnt = data
+        path, color_correct_img, is24, scalin_ratio, sherd_cnt, rotation = data
+        processed_img = color_correct_img if is24 else cv.add(percentile_whitebalance(color_correct_img, 97.5), (10,10,10,0))
+        processed_img = cv.cvtColor(processed_img, cv.COLOR_BGR2RGB)
+        # processed_img = utils.detect_rotation(processed_img, sherd_cnt)
+        for size in sizes:
+            cv.imwrite(f'{path.parent}/{path.stem}' + f'-{size}.jpg', imresize(utils.rotate_img(processed_img, rotation), size))
 
-        white_balance_img = color_correct_img if is24 else cv.add(percentile_whitebalance(color_correct_img, 97.5), (10,10,10,0))
-        queue_out.put([path, white_balance_img, is24, scalin_ratio, sherd_cnt])
+        queue_out.put([path, processed_img, is24, scalin_ratio, sherd_cnt])
         print(f"Whitebalance2 finished {path}")
-
+    queue_out.put(None)
     print(f"Whitebalance2 Done!")
 
 
 # process to crop and write images
-def imwrite(queue_in, sizes):
+def write_cropped(queue_in, sizes):
     print(f"Write Started!")
 
     while True:
@@ -133,10 +137,9 @@ def imwrite(queue_in, sizes):
         if data is None:
             break
 
-        path, color_correct_img, _, scalin_ratio, sherd_cnt = data
+        path, processed_img, _, scalin_ratio, sherd_cnt = data
 
-        cropped_img_bgr = scaling(crop(color_correct_img, sherd_cnt, scalin_ratio), scalin_ratio)
-        cropped_img = cv.cvtColor(cropped_img_bgr, cv.COLOR_BGR2RGB)
+        cropped_img = scaling(crop(processed_img, sherd_cnt, scalin_ratio), scalin_ratio)
         cv.imwrite(f"outputs/{path.parent.parent.name}_{path.stem}.jpg", cropped_img)
 
         print(f"Write finished {path}")
@@ -146,7 +149,8 @@ def imwrite(queue_in, sizes):
 if __name__ == "__main__":
     start_time = time.time()
     # create pipes
-    queues = [Queue(maxsize=3) for _ in range(5)]
+    sizes = {1000}
+    queues = [Queue(maxsize=2) for _ in range(5)]
     lock = multiprocessing.Lock()
     # create processes
     processes = [
@@ -154,13 +158,14 @@ if __name__ == "__main__":
         Process(target=detect24, args=(queues[0], queues[1])),
         Process(target=whitebalance, args=(queues[1], queues[2])),
         Process(target=color_correct, args=(queues[2], queues[3])),
-        Process(target=whitebalance2, args=(queues[3], queues[4])),
-        Process(target=imwrite, args=(queues[4], {1000},))
+        Process(target=color_correct, args=(queues[2], queues[3])),
+        Process(target=write_corrcted, args=(queues[3], queues[4], sizes)),
+        Process(target=write_cropped, args=(queues[4], {1000}))
     ]
    
     for process in processes:
         process.start()
-
+    
     # see if a process is done
     for process in processes:
         process.join()

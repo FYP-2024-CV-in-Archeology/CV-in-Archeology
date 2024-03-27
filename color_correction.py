@@ -32,7 +32,7 @@ def toOpenCVU8(img):
     out = out.astype(np.uint8)
     return out
 
-def imresize(img, is24Checker, size=1500):
+def imresize(img, size=1500):
     # if is24Checker:
     #     img = np.rot90(img)
     if max(img.shape[1], img.shape[0]) >= size:

@@ -62,7 +62,7 @@ def getSherdCnt(img, cnts, is24Checker):
     else:
         cnts = list(filter(lambda cnt: isSherd4(cnt, patchPos), cnts))
     # checking if max() arg is empty also filter out the unqualified images (e.g. ones with no colorChecker)
-    return max(cnts, key=cv.contourArea)
+    return max(cnts, key=cv.contourArea), patchPos
 
 def getCentroid(cnt):
     M = cv.moments(cnt)
@@ -103,11 +103,6 @@ def crop_from_moment(img, moment, w, h, vertical):
 
 
 def detectSherd(img, adaptive=True):
-    # if adaptive:
-    #     # convert BGR to RGB
-    #     img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-
-    # utils.showImage(img)
 
     blur = cv.GaussianBlur(img,(5,5),0)
     img_g = cv.cvtColor(blur, cv.COLOR_BGR2GRAY)
@@ -119,12 +114,12 @@ def detectSherd(img, adaptive=True):
     thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
     # get the sherd contour
-    sherdCnt = getSherdCnt(img, cnts, adaptive)
+    sherdCnt, patchPos = getSherdCnt(img, cnts, adaptive)
 
     # img_cnt = img.copy()
     # cv.drawContours(img_cnt, sherdCnt, -1, (0, 255, 0), 30)
     # utils.showImage(img_cnt)
-    return sherdCnt
+    return sherdCnt, patchPos
 
 
 def crop(img, sherdCnt, scalingRatio=1):

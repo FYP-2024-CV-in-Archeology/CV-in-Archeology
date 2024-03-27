@@ -106,6 +106,33 @@ def getCardsBlackPos(img, is24Checker = True):
         
     return patchPos
 
+def detect_rotation(img, sherdCnt, patchPos):
+    sherd_bounding = cv.boundingRect(sherdCnt)
+    x, y, _, _ = sherd_bounding
+    x_scale, y_scale, _, _ = patchPos['black'] # !!!! can be optimized
+
+    rotate = 0
+    if img.shape[0] < img.shape[1] and y < y_scale:
+        return 0
+    else:
+        if x > x_scale:
+            rotate = 1
+        elif x < x_scale:
+            rotate = -1
+        elif y > y_scale:
+            rotate = 180
+    return rotate
+
+def rotate_img(img, rotate):
+    if rotate == 1:
+        return cv.rotate(img, cv.ROTATE_90_COUNTERCLOCKWISE)
+    elif rotate == -1:
+        return cv.rotate(img, cv.ROTATE_90_CLOCKWISE)
+    elif rotate == 180:
+        return cv.rotate(img, cv.ROTATE_180)
+
+    return img
+
 # detect if 24-patch color card exists
 def detect24Checker(img, detector, kernel_size=5):
     kernel = np.ones((kernel_size, kernel_size), np.uint8)
