@@ -23,7 +23,7 @@ from color_correction import color_correction, percentile_whitebalance, imresize
 
 # process to read images from file system
 def imread(input_path, queue_out):
-    print(f"imread Started!")
+    #print(f"imread Started!")
     
     for dirpath, dirnames, filenames in os.walk(input_path):
         dirnames.sort()
@@ -38,16 +38,16 @@ def imread(input_path, queue_out):
             if dir > '478130_4419430_8_20':
                 if 'cr' in path.suffix.lower() and (filename == '2' or filename == '1'):
                     queue_out.put([path, utils.imread(path)])
-                    print(f"imread finished {path}")
+                    #print(f"imread finished {path}")
                     # sleep(999999.9999)
 
-    print(f"imread Done!")
+    #print(f"imread Done!")
     queue_out.put(None)
     queue_out.put(None)
 
 # process to detect 24 or 4 color checker
 def detect24(queue_in, queue_out):
-    print(f"detect24 Started!")
+    #print(f"detect24 Started!")
 
     while True:
         data = queue_in.get()
@@ -62,12 +62,12 @@ def detect24(queue_in, queue_out):
         scaling_ratio = calc_scaling_ratio(raw_img, is24Checker, 900)
 
         queue_out.put([path, raw_img, is24Checker, scaling_ratio]) 
-        print(f"detect24 finished {path}")
-    print(f"detect24 Done!")
+        #print(f"detect24 finished {path}")
+    #print(f"detect24 Done!")
 
 # process to whitebalance images and also detect sherd contour
 def whitebalance(queue_in, queue_out):
-    print(f"Whitebalance Started!")
+    #print(f"Whitebalance Started!")
 
     while True:
         data = queue_in.get()
@@ -82,13 +82,13 @@ def whitebalance(queue_in, queue_out):
         sherd_cnt, patch_pos = detectSherd(white_balance_img, is24)
         rotation = utils.detect_rotation(white_balance_img, sherd_cnt, patch_pos)
         queue_out.put([path, white_balance_img, is24, scalin_ratio, sherd_cnt, rotation])
-        print(f"Whitebalance finished {path}")
+        #print(f"Whitebalance finished {path}")
 
-    print(f"Whitebalance Done!")
+    #print(f"Whitebalance Done!")
 
 # process to color correct images
 def color_correct(queue_in, queue_out):
-    print(f"Color Correction Started!")
+    #print(f"Color Correction Started!")
 
     while True:
         data = queue_in.get()
@@ -101,13 +101,13 @@ def color_correct(queue_in, queue_out):
         is24Checker = utils.detect24Checker(cv.cvtColor(white_balance_img, cv.COLOR_RGB2BGR), detector)
         color_correct_img = color_correction(white_balance_img, detector, is24Checker)
         queue_out.put([path, color_correct_img, is24, scalin_ratio, sherd_cnt, rotation])
-        print(f"Color Corrected {path}")
+        #print(f"Color Corrected {path}")
 
-    print(f"Color Correction Done!")
+    #print(f"Color Correction Done!")
 
 # do the last processing of images and write them to file system
 def imwrite(queue_in, sizes):
-    print(f"Whitebalance Started!")
+    #print(f"Whitebalance Started!")
     done = 0
     while done < 2:
         data = queue_in.get()
@@ -125,8 +125,8 @@ def imwrite(queue_in, sizes):
         cropped_img = scaling(crop(processed_img, sherd_cnt, scalin_ratio), scalin_ratio)
         cv.imwrite(f"outputs/{path.parent.parent.name}_{path.stem}.jpg", cropped_img)
 
-        print(f"Write finished {path}")
-    print(f"imwrite Done!")
+        #print(f"Write finished {path}")
+    #print(f"imwrite Done!")
 
 
 if __name__ == "__main__":

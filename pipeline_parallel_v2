@@ -1,0 +1,73 @@
+import os
+import sys
+import time
+import cProfile
+
+sys.path.append('../')
+
+import numpy as np
+import tkinter as tk
+from pathlib import Path
+import cv2 as cv
+import rawpy
+
+import multiprocessing
+from multiprocessing import pool
+from multiprocessing import Queue
+from multiprocessing import Pipe
+
+import utils
+from cropping import detectSherd, crop
+from scaling import scaling, calc_scaling_ratio
+from color_correction import color_correction, percentile_whitebalance, imresize
+
+def read_path(input_path):
+    paths = []    
+    for dirpath, dirnames, filenames in os.walk(input_path):
+        dirnames.sort()
+        for file in filenames:
+            path = Path(dirpath) / file
+            dir, filename = path.parent.name, path.stem
+            
+            if '.DS_Store' in filename or 'pxrf' in filename:
+                continue
+            filename = filename[0]
+
+            if dir > '478130_4419430_8_20':
+                if 'cr' in path.suffix.lower() and (filename == '2' or filename == '1'):
+                    paths.append(path)
+    return paths
+             
+def run(path, sizes):
+    raw_img = utils.imread(path)
+
+    detector = cv.mcc.CCheckerDetector_create()
+    is24 = utils.detect24Checker(cv.cvtColor(raw_img, cv.COLOR_RGB2BGR), detector)  # must be bgr
+    scaling_ratio = calc_scaling_ratio(raw_img, is24, 900)
+
+    white_balance_img = raw_img if is24 else percentile_whitebalance(raw_img, 97.5)            
+    sherd_cnt, patch_pos = detectSherd(white_balance_img, is24)
+    rotation = utils.detect_rotation(white_balance_img, sherd_cnt, patch_pos)
+
+    detector = cv.mcc.CCheckerDetector_create()
+    is24Checker = utils.detect24Checker(cv.cvtColor(white_balance_img, cv.COLOR_RGB2BGR), detector)
+    color_correct_img = color_correction(white_balance_img, detector, is24Checker)
+
+    processed_img = color_correct_img if is24 else cv.add(percentile_whitebalance(color_correct_img, 97.5), (10,10,10,0))
+    processed_img = cv.cvtColor(processed_img, cv.COLOR_BGR2RGB)
+
+    for size in sizes:
+        cv.imwrite(f'{path.parent}/{path.stem}' + f'-{size}.jpg', imresize(utils.rotate_img(processed_img, rotation), size))
+
+    cropped_img = scaling(crop(processed_img, sherd_cnt, scaling_ratio), scaling_ratio)
+    cv.imwrite(f"outputs/{path.parent.parent.name}_{path.stem}.jpg", cropped_img)
+
+
+if __name__ == "__main__":
+    t = time.time()
+    p = pool.Pool(6)
+    paths = read_path('test')
+    
+    p.starmap(run, [(path, {1000}) for path in paths])
+    print(f"Time taken: {time.time() - t}")
+    
