@@ -1,20 +1,13 @@
 import os
 import sys
 import time
-import cProfile
 
 sys.path.append('../')
 
-import numpy as np
-import tkinter as tk
 from pathlib import Path
 import cv2 as cv
-import rawpy
 
-import multiprocessing
 from multiprocessing import pool
-from multiprocessing import Queue
-from multiprocessing import Pipe
 
 import utils
 from cropping import detectSherd, crop
@@ -62,7 +55,6 @@ def run(path, sizes):
     cropped_img = scaling(crop(processed_img, sherd_cnt, scaling_ratio), scaling_ratio)
     cv.imwrite(f"outputs/{path.parent.parent.name}_{path.stem}.jpg", cropped_img)
 
-
 if __name__ == "__main__":
     t = time.time()
     p = pool.Pool(6)
@@ -70,4 +62,3 @@ if __name__ == "__main__":
     
     p.starmap(run, [(path, {1000}) for path in paths])
     print(f"Time taken: {time.time() - t}")
-    
