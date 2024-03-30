@@ -31,7 +31,7 @@ def process(input_folder, output_tif):
     # disable process button
     process_btn.config(state=tk.DISABLED)
 
-    t = Thread(target=run, args=(input_folder, output_tif, log, done, process_btn, skip_files_start.get(), skip_files_end.get(), sizes))
+    t = Thread(target=run, args=(input_folder, dpi, output_tif, log, done, process_btn, skip_files_start.get(), skip_files_end.get(), sizes))
     t.start()
 
 if __name__ == "__main__":
@@ -56,6 +56,31 @@ if __name__ == "__main__":
     # Create a button for selecting the input folder
     input_select_button = tk.Button(input_frame, text="Browse", command=select_input_folder)
     input_select_button.pack(side=tk.LEFT)
+
+    # add a empty frame as a separator
+    separator = tk.Frame(window, height=2, bd=1)
+    separator.pack(fill=tk.X, padx=10, pady=5)
+
+    # create a frame for the dpi
+    dpi_frame = tk.Frame(window)
+    dpi_frame.pack(pady=10, padx=10, anchor=tk.W)
+    dpi = tk.IntVar()
+    #dpi.set(1200)
+    dpi_label = tk.Label(dpi_frame, text="DPI:")
+    dpi_label.pack(side=tk.LEFT, padx=5, anchor='w')
+    dpi_entry = tk.Entry(dpi_frame, textvariable=dpi, width=10)
+    dpi_entry.pack(side=tk.LEFT, padx=5, anchor='w')
+    dpi_button = tk.Button(dpi_frame, text="Set DPI", command=lambda: [dpi.set(int(dpi_entry.get()) if dpi_entry.get() else 1200), dpi_selected.config(text=dpi.get())])
+    # put the button beside the dpi entry to the right
+    dpi_button.pack(padx=10, anchor=tk.W)
+
+    # add a frame to show the selected dpi
+    dpi_selected_frame = tk.Frame(window)
+    dpi_selected_label = tk.Label(dpi_selected_frame, text=f"Selected DPI:", state=tk.DISABLED)
+    dpi_selected_label.pack(side=tk.LEFT, padx=5, anchor='w')
+    dpi_selected = tk.Label(dpi_selected_frame, text=dpi.get(), state=tk.DISABLED)
+    dpi_selected.pack(side=tk.LEFT, padx=5, anchor='w')
+    dpi_selected_frame.pack(pady=10, padx=10, anchor=tk.W)
 
     # add a empty frame as a separator
     separator = tk.Frame(window, height=2, bd=1)
@@ -98,7 +123,7 @@ if __name__ == "__main__":
     scalled_frame = tk.Frame(window)
     scalled_size = tk.IntVar()
     # initialize the scalled size
-    scalled_size.set(100)
+    scalled_size.set(450)
 
     scalled_size_entry = tk.Entry(scalled_frame, textvariable=scalled_size, width=10, state=tk.DISABLED)
     scalled_size_label = tk.Label(scalled_frame, text="Size (100-5000):", state=tk.DISABLED)

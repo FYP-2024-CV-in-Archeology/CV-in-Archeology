@@ -29,7 +29,7 @@ def write(path, img):
     else:
         cv.imwrite(path, img)  
 
-def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None, skip_files_start=0, skip_files_end=0, sizes=None):
+def run(input_path, dpi=1200, output_tif=False, log=None, done_btn=None, process_btn=None, skip_files_start=0, skip_files_end=0, sizes=None):
     print(sizes)
     for dirpath, dirnames, filenames in os.walk(input_path):
         dirnames.sort()
@@ -70,7 +70,7 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
                         is24Checker = utils.detect24Checker(cv.cvtColor(img, cv.COLOR_RGB2BGR), detector)  # must be bgr
                         # print(is24Checker)
                         #scaling part with no geocali
-                        scalingRatio = calc_scaling_ratio(img_orig, is24Checker, 900)
+                        scalingRatio = calc_scaling_ratio(img_orig, is24Checker, dpi)
                         
                         # calculate the dpi of img_scal
                         if not is24Checker:
@@ -125,6 +125,7 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
                             write(f'{path.parent}/{filename}' + '.tif', scaling_before_cropping(colorCorrection, scalingRatio))
                     for size in sizes:
                         write(f'{path.parent}/{filename}' + f'-{size}.jpg', color_correction.imresize(colorCorrection, size))
+                    write(f'{path.parent}/{filename}' + '-450.jpg', color_correction.imresize(colorCorrection, 450))
                     write(f'{path.parent}/{filename + 2}' + '.tif', cropped)
                     write(f'{path.parent}/{filename + 2}' + '.jpg', cropped)
 
@@ -136,7 +137,7 @@ def run(input_path, output_tif=False, log=None, done_btn=None, process_btn=None,
         process_btn.config(state=tk.NORMAL)
 if __name__ == "__main__":
    start_time = time.time()
-   run('test', sizes={1000})
+   run('test', 1200, sizes={1000})
    print(f"--- {time.time() - start_time} seconds ---")
   
 
