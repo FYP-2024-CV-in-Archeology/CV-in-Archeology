@@ -132,10 +132,20 @@ if __name__ == "__main__":
     separator.pack(fill=tk.X, padx=10, pady=5)
 
     # create a select box for output tif files or not
+    output_tif_frame = tk.Frame(window)
+    output_tif_frame.pack(pady=10, padx=10, anchor=tk.W)
     output_tif = tk.IntVar()
     output_tif.set(0)
-    output_tif_check = tk.Checkbutton(window, text="Output tif files", variable=output_tif)
-    output_tif_check.pack(pady=5, padx=10, anchor=tk.W)
+    output_tif_check = tk.Checkbutton(output_tif_frame, text="Output tif files", variable=output_tif)
+    output_tif_check.pack(side=tk.LEFT, pady=5, padx=10, anchor=tk.W)
+
+    tif_helper_label = tk.Label(output_tif_frame, text=" ⍰ ")
+    tif_helper_label.pack(side=tk.LEFT, pady=5, padx=10, anchor=tk.W)
+    Tooltip(tif_helper_label,
+            '''
+            Check this box if you want the tif outputs.
+            By default, the output files are in jpg format with size 450 * 300.
+            ''')
 
     # create a frame for the skip files
     skip_files_frame = tk.Frame(window)
@@ -147,10 +157,19 @@ if __name__ == "__main__":
     skip_files_end_entry = tk.Entry(skip_files_frame, textvariable=skip_files_end, width=10, state=tk.DISABLED)
 
     # create a select box for skipping sertain files
+    skip_frame2 = tk.Frame(window)
     skip_files = tk.IntVar()
     skip_files.set(0)
-    skip_files_check = tk.Checkbutton(window, text="Bones and Stones", variable=skip_files, command=lambda: [skip_files_start_entry.config(state=tk.NORMAL) if skip_files.get() else skip_files_start_entry.config(state=tk.DISABLED), skip_files_end_entry.config(state=tk.NORMAL) if skip_files.get() else skip_files_end_entry.config(state=tk.DISABLED), skip_files_label.config(state=tk.NORMAL) if skip_files.get() else skip_files_label.config(state=tk.DISABLED)])
-    skip_files_check.pack(pady=5, padx=10, anchor=tk.W)
+    skip_files_check = tk.Checkbutton(skip_frame2, text="Specific Range", variable=skip_files, command=lambda: [skip_files_start_entry.config(state=tk.NORMAL) if skip_files.get() else skip_files_start_entry.config(state=tk.DISABLED), skip_files_end_entry.config(state=tk.NORMAL) if skip_files.get() else skip_files_end_entry.config(state=tk.DISABLED), skip_files_label.config(state=tk.NORMAL) if skip_files.get() else skip_files_label.config(state=tk.DISABLED)])
+    skip_files_check.pack(side=tk.LEFT, pady=5, padx=10, anchor=tk.W)
+    skip_helper_label = tk.Label(skip_frame2, text=" ⍰ ")
+    skip_helper_label.pack(side=tk.LEFT, padx=5)  
+    Tooltip(skip_helper_label,
+            '''
+            Check this box if you want to specify a range of files to be processed. Enter the start and end indexes of the files, 
+            or uncheck the box to process all the files.
+            ''')
+    skip_frame2.pack(pady=10, padx=10, anchor=tk.W)
     # insert text
     skip_files_label = tk.Label(skip_files_frame, text="Index Range:", state=tk.DISABLED)
     skip_files_label.pack(side=tk.LEFT, padx=5, anchor='w')
@@ -159,16 +178,28 @@ if __name__ == "__main__":
     skip_files_end_entry.pack(side=tk.LEFT, padx=5, anchor='w')
 
     # create a select box for scaled output
+    scale_frame2 = tk.Frame(window)
     scale = tk.IntVar()
     scale.set(0)
-    skip_files_check = tk.Checkbutton(window, text="Output Scalled JPEG", variable=scale, command=lambda: [scalled_size_entry.config(state=tk.NORMAL) if scale.get() else scalled_size_entry.config(state=tk.DISABLED), scalled_size_label.config(state=tk.NORMAL) if scale.get() else scalled_size_label.config(state=tk.DISABLED), scalled_filename_entry.config(state=tk.NORMAL) if scale.get() else scalled_filename_entry.config(state=tk.DISABLED), scalled_filename_label.config(state=tk.NORMAL) if scale.get() else scalled_filename_label.config(state=tk.DISABLED), scalled_size_add.config(state=tk.NORMAL) if scale.get() else scalled_size_add.config(state=tk.DISABLED), scalled_size_list.config(state=tk.NORMAL) if scale.get() else scalled_size_list.config(state=tk.DISABLED), scalled_size_list_frame.config(state=tk.NORMAL) if scale.get() else scalled_size_list_frame.config(state=tk.DISABLED), ])
-    skip_files_check.pack(pady=5, padx=10, anchor=tk.W)
+    skip_files_check = tk.Checkbutton(scale_frame2, text="Output Scalled JPEG", variable=scale, command=lambda: [scalled_size_entry.config(state=tk.NORMAL) if scale.get() else scalled_size_entry.config(state=tk.DISABLED), scalled_size_label.config(state=tk.NORMAL) if scale.get() else scalled_size_label.config(state=tk.DISABLED), scalled_filename_entry.config(state=tk.NORMAL) if scale.get() else scalled_filename_entry.config(state=tk.DISABLED), scalled_filename_label.config(state=tk.NORMAL) if scale.get() else scalled_filename_label.config(state=tk.DISABLED), scalled_size_add.config(state=tk.NORMAL) if scale.get() else scalled_size_add.config(state=tk.DISABLED), scalled_size_list.config(state=tk.NORMAL) if scale.get() else scalled_size_list.config(state=tk.DISABLED), scalled_size_list_frame.config(state=tk.NORMAL) if scale.get() else scalled_size_list_frame.config(state=tk.DISABLED), ])
+    skip_files_check.pack(side=tk.LEFT, pady=5, padx=10, anchor=tk.W)
+
+    scale_helper_label = tk.Label(scale_frame2, text=" ⍰ ")
+    scale_helper_label.pack(side=tk.LEFT, padx=5)
+    Tooltip(scale_helper_label,
+            '''
+            Check this box if you want the scaled output files.
+            By default, the output files are in jpg format with size 450 * 300, which will always be generated.
+            Indicate the target size of the scalled images.
+            ''')
+
+    scale_frame2.pack(pady=10, padx=10, anchor=tk.W)
 
     # create text box for inputting scalled filename and size
     scalled_frame = tk.Frame(window)
     scalled_size = tk.IntVar()
     # initialize the scalled size
-    scalled_size.set(450)
+    scalled_size.set(0)
 
     scalled_size_entry = tk.Entry(scalled_frame, textvariable=scalled_size, width=10, state=tk.DISABLED)
     scalled_size_label = tk.Label(scalled_frame, text="Size (100-5000):", state=tk.DISABLED)
@@ -183,7 +214,8 @@ if __name__ == "__main__":
     # scalled_filename_label.pack(side=tk.LEFT, padx=5, anchor='w')
     # scalled_filename_entry.pack(side=tk.LEFT, padx=5, anchor='w')
 
-    sizes = set()
+    sizes = {450}
+
 
     # create a button to add the scalled size and filename
     scalled_size_add = tk.Button(scalled_frame, text="Add", command=lambda: [sizes.add(scalled_size.get()) if scalled_size.get() >= 100 and scalled_size.get() <= 5000 else None, scalled_size_list.config(text=sizes)], state=tk.DISABLED)
