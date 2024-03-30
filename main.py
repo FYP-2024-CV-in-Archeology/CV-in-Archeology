@@ -4,6 +4,35 @@ from tkinter import scrolledtext
 from pipeline import run
 from threading import *
 
+class Tooltip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tooltip_window = None
+
+        # Bind entering and leaving events
+        self.widget.bind("<Enter>", self.enter)
+        self.widget.bind("<Leave>", self.leave)
+
+    def enter(self, event=None):
+        # Create the tooltip window
+        x, y, cx, cy = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 20
+
+        # This is the Toplevel widget acting as the tooltip
+        self.tooltip_window = tk.Toplevel(self.widget)
+        self.tooltip_window.wm_overrideredirect(True)
+        self.tooltip_window.wm_geometry("+%d+%d" % (x, y))
+        label = tk.Label(self.tooltip_window, text=self.text, background="lightyellow", relief='solid', borderwidth=1,
+                         font=("Arial", "12", "normal"))
+        label.pack()
+
+    def leave(self, event=None):
+        if self.tooltip_window:
+            self.tooltip_window.destroy()
+            self.tooltip_window = None
+
 def select_input_folder():
     folder_path = filedialog.askdirectory()
     if folder_path:
@@ -38,7 +67,7 @@ if __name__ == "__main__":
     # Create the main window
     window = tk.Tk()
     window.title("Image Processing")
-    window.geometry("500x500")
+    window.geometry("600x600")
 
     # Create a label for the selected folder
     input_folder_label = tk.Label(window, text="Select Input Folder:")
@@ -57,6 +86,14 @@ if __name__ == "__main__":
     input_select_button = tk.Button(input_frame, text="Browse", command=select_input_folder)
     input_select_button.pack(side=tk.LEFT)
 
+    input_helper_label = tk.Label(input_frame, text=" ⍰ ")
+    input_helper_label.pack(side=tk.LEFT, padx=5)
+    Tooltip(input_helper_label, 
+            '''
+            Enter the path of the folder containing the images to be processed.
+            You can either type the path or click the browse button to select the folder.
+            ''')
+
     # add a empty frame as a separator
     separator = tk.Frame(window, height=2, bd=1)
     separator.pack(fill=tk.X, padx=10, pady=5)
@@ -65,14 +102,22 @@ if __name__ == "__main__":
     dpi_frame = tk.Frame(window)
     dpi_frame.pack(pady=10, padx=10, anchor=tk.W)
     dpi = tk.IntVar()
-    #dpi.set(1200)
+    dpi.set(1200)
     dpi_label = tk.Label(dpi_frame, text="DPI:")
     dpi_label.pack(side=tk.LEFT, padx=5, anchor='w')
     dpi_entry = tk.Entry(dpi_frame, textvariable=dpi, width=10)
     dpi_entry.pack(side=tk.LEFT, padx=5, anchor='w')
     dpi_button = tk.Button(dpi_frame, text="Set DPI", command=lambda: [dpi.set(int(dpi_entry.get()) if dpi_entry.get() else 1200), dpi_selected.config(text=dpi.get())])
     # put the button beside the dpi entry to the right
-    dpi_button.pack(padx=10, anchor=tk.W)
+    dpi_button.pack(side=tk.LEFT, padx=5, anchor=tk.W)
+
+    dpi_helper_label = tk.Label(dpi_frame, text=" ⍰ ")
+    dpi_helper_label.pack(side=tk.LEFT, padx=5)
+    Tooltip(dpi_helper_label,
+            '''
+            Enter the DPI (Dots Per Inch) of the images to be processed.
+            The default value is 1200.
+            ''')
 
     # add a frame to show the selected dpi
     dpi_selected_frame = tk.Frame(window)
