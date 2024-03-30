@@ -88,8 +88,10 @@ def getCardsBlackPos(img, is24Checker = True):
         cnts, _ = cv.findContours(
         mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         # Get rectangle only
-        cnts = list(filter(lambda x: len(cv.approxPolyDP(
-            x, 0.01*cv.arcLength(x, True), True)) >= 4 <= 6, cnts))
+        cnts = list(filter(lambda x: 
+                           len(cv.approxPolyDP(x, 0.01*cv.arcLength(x, True), True)) <= 6 
+                            and  
+                            len(cv.approxPolyDP(x, 0.01*cv.arcLength(x, True), True)) >= 4, cnts))
     else:
         cnts = list(filter(lambda x: len(cv.approxPolyDP(
             x, 0.01*cv.arcLength(x, True), True)) == 4, cnts))       
