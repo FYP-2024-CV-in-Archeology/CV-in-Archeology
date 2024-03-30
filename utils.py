@@ -91,7 +91,7 @@ def getCardsBlackPos(img, is24Checker = True):
 
     
     cnts = sorted(cnts, reverse=True, key=cv.contourArea)
-    print(len(cnts))
+
     if len(cnts) < 2: 
         raise Exception("No black squares detected.")
     if is24Checker is True: 
