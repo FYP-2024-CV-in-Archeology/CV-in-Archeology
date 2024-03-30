@@ -56,13 +56,14 @@ def isSherd24(cnt, patchPos):
     return True
 
 def getSherdCnt(img, cnts, is24Checker):
-    patchPos = utils.getCardsBlackPos(img.copy(), is24Checker)
+    blackPos = utils.getCardsBlackPos(img.copy(), is24Checker)
     if is24Checker:
-        cnts = list(filter(lambda cnt: isSherd24(cnt, patchPos), cnts))
+        cnts = list(filter(lambda cnt: isSherd24(cnt, blackPos), cnts))
     else:
-        cnts = list(filter(lambda cnt: isSherd4(cnt, patchPos), cnts))
+        blackPos['green'] = utils.getCardGreenPos(img.copy())
+        cnts = list(filter(lambda cnt: isSherd4(cnt, blackPos), cnts))
     # checking if max() arg is empty also filter out the unqualified images (e.g. ones with no colorChecker)
-    return max(cnts, key=cv.contourArea), patchPos
+    return max(cnts, key=cv.contourArea), blackPos
 
 def getCentroid(cnt):
     M = cv.moments(cnt)
@@ -112,7 +113,7 @@ def detectSherd(img, adaptive=True):
     # find contours
     cnts, _ = cv.findContours(
     thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-
+    # utils.showImage(img)
     # get the sherd contour
     sherdCnt, patchPos = getSherdCnt(img, cnts, adaptive)
 
@@ -135,9 +136,10 @@ def crop(img, sherdCnt, scalingRatio=1):
     return crop
 
 if __name__ == "__main__":
-    img = rawpy.imread('test_images/201 /photos/1.CR3')
+    img = rawpy.imread(r'e:\Users\yytu\Desktop\test1\4419550\93\4\photos\1.CR3')
     assert img is not None, "file could not be read, check with os.path.exists()"
     img = img.postprocess()
+    utils.showImage(img)
     # show the image in a window
-    sherdCnt = detectSherd(img, False)
+    sherdCnt = detectSherd(img, True)
     utils.showImage(crop(img, sherdCnt))

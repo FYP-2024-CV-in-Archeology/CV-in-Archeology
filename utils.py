@@ -62,6 +62,20 @@ def showImage(img):
     cv.waitKey(0)
     cv.destroyAllWindows()
 
+def getCardGreenPos(img):
+    mask = cv.inRange(img, COLOUR_RANGE['green'][0], COLOUR_RANGE['green'][1])
+    mask_updated = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel)
+    contours, _ = cv.findContours(mask_updated, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+    contours = list(filter(lambda x: len(cv.approxPolyDP(x, 0.01 * cv.arcLength(x, True), True)) == 4, contours))
+    contours = sorted(contours, key=cv.contourArea, reverse=True)
+    
+    if len(contours) > 0:
+        bounding_rect = cv.boundingRect(contours[0])
+        return bounding_rect
+    else:
+        return None
+
 # Detect the black region to guess the positions of 24checker and scaling card in an image 
 def getCardsBlackPos(img, is24Checker = True):
     patchPos = {}
