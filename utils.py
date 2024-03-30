@@ -82,16 +82,21 @@ def getCardsBlackPos(img, is24Checker = True):
     
     # Fill the black color to get the card
     # if is24Checker is True: 
-    mask = cv.drawContours(mask, cnts, -1, 255, -1)
-    cnts, _ = cv.findContours(
+   
+    if is24Checker:
+        mask = cv.drawContours(mask, cnts, -1, 255, -1)
+        cnts, _ = cv.findContours(
         mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    # Get rectangle only
-    cnts = list(filter(lambda x: len(cv.approxPolyDP(
-            x, 0.01*cv.arcLength(x, True), True)) >= 4 <=6, cnts))
+        # Get rectangle only
+        cnts = list(filter(lambda x: len(cv.approxPolyDP(
+            x, 0.01*cv.arcLength(x, True), True)) >= 4 <= 6, cnts))
+    else:
+        cnts = list(filter(lambda x: len(cv.approxPolyDP(
+            x, 0.01*cv.arcLength(x, True), True)) == 4, cnts))       
 
-    
+    # plt.imshow(cv.drawContours(img, cnts, -1, 255, -1))
     cnts = sorted(cnts, reverse=True, key=cv.contourArea)
-
+    # print(len(cnts))
     if len(cnts) < 2: 
         raise Exception("No black squares detected.")
     if is24Checker is True: 
@@ -106,7 +111,6 @@ def getCardsBlackPos(img, is24Checker = True):
         patchPos['black'] = cv.boundingRect(cnts[1]) # The largest may be the blue patch
         
     return patchPos
-
 
 def detect_rotation(img, sherdCnt, patchPos):
     sherd_bounding = cv.boundingRect(sherdCnt)
