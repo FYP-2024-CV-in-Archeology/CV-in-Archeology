@@ -5,24 +5,18 @@ sys.path.append('../')
 from pathlib import Path
 import cv2 as cv
 import utils
-import rawpy
 import cropping
 from scaling import scaling, calc_scaling_ratio, scaling_before_cropping
 import color_correction
 import numpy as np
 import tkinter as tk
 import cProfile
-from time import sleep
-from multiprocessing import Process
-from multiprocessing import Queue
-
-
 
 def write(path, img):
     # if path exists, prompt user to overwrite
     if os.path.exists(path):
         # write a messageBox to ask user if they want to overwrite
-        # overwrite = tk.messagebox.askyesno("Overwrite", f"File {path} already exists. Do you want to overwrite it?")
+        overwrite = tk.messagebox.askyesno("Overwrite", f"File {path} already exists. Do you want to overwrite it?")
         overwrite = True
         if overwrite:
             cv.imwrite(path, img)
@@ -61,14 +55,14 @@ def run(input_path, dpi=1200, output_tif=False, log=None, done_btn=None, process
                                 write(f'{path.parent}/{filename}' + '.tif', scaling_before_cropping(colorCorrection, scalingRatio))
                             for size in sizes:
                                 write(f'{path.parent}/{filename}' + f'-{size}.jpg', color_correction.imresize(colorCorrection, is24Checker, size))
-                
                             continue
+
                         if log:
                             log.insert(tk.END, f'Processing {path}...\n')
 
                         detector = cv.mcc.CCheckerDetector_create()
                         is24Checker = utils.detect24Checker(cv.cvtColor(img, cv.COLOR_RGB2BGR), detector)  # must be bgr
-                        # print(is24Checker)
+
                         #scaling part with no geocali
                         scalingRatio = calc_scaling_ratio(img_orig, is24Checker, dpi)
                         
@@ -80,57 +74,46 @@ def run(input_path, dpi=1200, output_tif=False, log=None, done_btn=None, process
                         if not is24Checker:
                             colorCorrection = color_correction.percentile_whitebalance(colorCorrection, 97.5)
                             colorCorrection = cv.add(colorCorrection, (10,10,10,0))
-
-                        ########## img_scaled = scaling_before_cropping(colorCorrection, scalingRatio)
                         
                         sherdCnt, patchPos = cropping.detectSherd(img_orig, is24Checker)
 
                         rotate = utils.detect_rotation(img_orig, sherdCnt, patchPos)
-
-                        # draw contours
-                        # img_cnt = img.copy()
-                        # cv.drawContours(img_cnt, sherdCnt, -1, (0, 255, 0), 30)
-                        # utils.showImage(img_cnt)
                         cropped = cropping.crop(colorCorrection, sherdCnt, scalingRatio)
                         cropped = scaling(cropped, scalingRatio)
-                        # print(cropped.shape)
-                        # utils.showImage(cropped)
+
+                        if not cropped.any():
+                            print(f'No output for {path}')
+                            if log:
+                                log.insert(tk.END, f'No crop for {path}!\n')
+                            continue
+                        else:
+                            # utils.showImage(cropped)
+                            # convert to RGB and write into current folder
+                            cropped = cv.cvtColor(cropped, cv.COLOR_BGR2RGB)
+                            colorCorrection = cv.cvtColor(colorCorrection, cv.COLOR_BGR2RGB)
+                        
+                            if rotate != 0:
+                                if rotate == 1:
+                                    colorCorrection = cv.rotate(colorCorrection, cv.ROTATE_90_COUNTERCLOCKWISE)
+                                elif rotate == -1:
+                                    colorCorrection = cv.rotate(colorCorrection, cv.ROTATE_90_CLOCKWISE)
+                                elif rotate == 180:
+                                    colorCorrection = cv.rotate(colorCorrection, cv.ROTATE_180)
+                        if output_tif:
+                                write(f'{path.parent}/{filename}' + '.tif', scaling_before_cropping(colorCorrection, scalingRatio))
+                        for size in sizes:
+                            write(f'{path.parent}/{filename}' + f'-{size}.jpg', color_correction.imresize(colorCorrection, size))
+                        write(f'{path.parent}/{filename + 2}' + '.tif', cropped)
+                        write(f'{path.parent}/{filename + 2}' + '.jpg', cropped)
+
+                        if log:
+                            log.insert(tk.END, f'Done!\n')
+
                     except Exception as e:
-                        print(f'Cannot process image: {path}. Exception: {e}. Try no scaling.')
+                        print(f'Cannot process image: {path}. Exception: {e}.')
                         if log:
-                            log.insert(tk.END, f'Cannot process image: {path}. Exception: {e}. Try no scaling.\n')
-                        img_copy = img.copy()
-                        colorCorrection_2, _ = color_correction.color_correction(img_copy)
-                        sherdCnt = cropping.detectSherd(img_copy, is24Checker)
-                        cropped = cropping.crop(colorCorrection_2, sherdCnt)
-
-                    if not cropped.any():
-                        print(f'No output for {path}')
-                        if log:
-                            log.insert(tk.END, f'No crop for {path}!\n')
-                    else:
-                        # utils.showImage(cropped)
-                        # convert to RGB and write into current folder
-                        cropped = cv.cvtColor(cropped, cv.COLOR_BGR2RGB)
-                        colorCorrection = cv.cvtColor(colorCorrection, cv.COLOR_BGR2RGB)
-                       
-                        if rotate != 0:
-                            if rotate == 1:
-                                colorCorrection = cv.rotate(colorCorrection, cv.ROTATE_90_COUNTERCLOCKWISE)
-                            elif rotate == -1:
-                                colorCorrection = cv.rotate(colorCorrection, cv.ROTATE_90_CLOCKWISE)
-                            elif rotate == 180:
-                                colorCorrection = cv.rotate(colorCorrection, cv.ROTATE_180)
-                    if output_tif:
-                            write(f'{path.parent}/{filename}' + '.tif', scaling_before_cropping(colorCorrection, scalingRatio))
-                    for size in sizes:
-                        write(f'{path.parent}/{filename}' + f'-{size}.jpg', color_correction.imresize(colorCorrection, size))
-                    write(f'{path.parent}/{filename}' + '-450.jpg', color_correction.imresize(colorCorrection, 450))
-                    write(f'{path.parent}/{filename + 2}' + '.tif', cropped)
-                    write(f'{path.parent}/{filename + 2}' + '.jpg', cropped)
-
-                    if log:
-                        log.insert(tk.END, f'Done!\n')
+                            log.insert(tk.END, f'Cannot process image: {path}. Exception: {e}.\n')
+                        continue
 
     if (done_btn and process_btn):
         done_btn.config(state=tk.NORMAL)    
