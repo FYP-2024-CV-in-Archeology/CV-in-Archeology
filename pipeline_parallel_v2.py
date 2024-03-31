@@ -1,5 +1,6 @@
 import os
 import sys
+import traceback
 
 sys.path.append('../')
 
@@ -60,7 +61,7 @@ def run(path, dpi, output_tif, sizes, overwrite):
         white_balance_img = raw_img if is24 else percentile_whitebalance(raw_img, 97.5)        
 
         # detect sherd on original image
-        sherd_cnt, patch_pos = detectSherd(white_balance_img, is24)
+        sherd_cnt, patch_pos = detectSherd(raw_img, is24)
 
         # detect rotation
         rotation = utils.detect_rotation(white_balance_img, sherd_cnt, patch_pos)
@@ -90,5 +91,5 @@ def run(path, dpi, output_tif, sizes, overwrite):
         print("Finished", path)
     except Exception as e:
         queue.put(f"Cannot process {path}! Error: {e}")
-        print("Error", path, e)
+        print(traceback.format_exc())
 

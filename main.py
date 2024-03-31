@@ -5,25 +5,55 @@ from multiprocessing import Pool, Manager
 import time
 import random
 from threading import Thread
-from main import Tooltip
 from pipeline_parallel_v2 import init_worker, read_path, run
 
+class Tooltip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tooltip_window = None
 
-def worker_pool_tasks(root, dpi_value, tif, start, end, sizes, overwrite_files):
+        # Bind entering and leaving events
+        self.widget.bind("<Enter>", self.enter)
+        self.widget.bind("<Leave>", self.leave)
+
+    def enter(self, event=None):
+        # Create the tooltip window
+        x, y, cx, cy = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 20
+
+        # This is the Toplevel widget acting as the tooltip
+        self.tooltip_window = tk.Toplevel(self.widget)
+        self.tooltip_window.wm_overrideredirect(True)
+        self.tooltip_window.wm_geometry("+%d+%d" % (x, y))
+        label = tk.Label(self.tooltip_window, text=self.text, background="lightyellow", relief='solid', borderwidth=1,
+                         font=("Arial", "12", "normal"))
+        label.pack()
+
+    def leave(self, event=None):
+        if self.tooltip_window:
+            self.tooltip_window.destroy()
+            self.tooltip_window = None
+
+def worker_pool_tasks(root, dpi_value, tif, start, end, sizes, overwrite_files, num_processes):
     """Function to submit tasks to the pool with parameters and handle results."""
-    with Pool(initializer=init_worker, initargs=(queue,), processes=6) as pool:
+    t = time.time()
+    with Pool(initializer=init_worker, initargs=(queue,), processes=num_processes) as pool:
         pathes = read_path(root, start, end)
         tasks = [(path, dpi_value, tif, sizes, overwrite_files) for path in pathes]
         results = pool.starmap_async(run, tasks)
         results.wait()  # Wait for all tasks to complete
         queue.put(None)  # Signal the GUI to stop updating
+        queue.put(f"Done! Time taken: {time.time() - t:.2f} seconds")
 
 def update_gui(shared_queue, text_widget):
     try:
         while True:
             message = shared_queue.get_nowait()
             if message is None:
-                text_widget.insert(tk.END, 'Done!' + '\n')
+                time = shared_queue.get()
+                text_widget.insert(tk.END, time + '\n')
                 text_widget.see(tk.END)
                 break
             text_widget.insert(tk.END, message + '\n')
@@ -49,8 +79,13 @@ def start_tasks(sizes):
     start = files_start.get()  # Get the start index
     end = files_end.get()  # Get the end index
     overwrite_files = overwrite.get()  # Get the overwrite value
+    processes = num_processes.get()  # Get the number of processes
+
+    # show the log window
+    log_window.deiconify()
+
     # Start the background tasks in a thread
-    Thread(target=worker_pool_tasks, args=(root, dpi_value, tif, start, end, sizes, overwrite_files)).start()
+    Thread(target=worker_pool_tasks, args=(root, dpi_value, tif, start, end, sizes, overwrite_files, processes)).start()
 
 if __name__ == "__main__":
     manager = Manager()
@@ -216,12 +251,35 @@ if __name__ == "__main__":
             By default, one jpg with size 450 * 300 will always be generated.
             Newly added size should be between 100-5000.
             ''')
+    
+    # let the users choose the number of processes
+    num_processes_frame = tk.Frame(window)
+    num_processes_frame.pack(pady=10, padx=10, anchor=tk.W)
+    num_processes_label = tk.Label(num_processes_frame, text="Number of Processes:")
+    num_processes_label.pack(side=tk.LEFT, padx=5, anchor='w')
+    num_processes = tk.IntVar()
+    num_processes.set(2)
+    num_processes_entry = tk.Entry(num_processes_frame, textvariable=num_processes, width=10)
+    num_processes_entry.pack(side=tk.LEFT, padx=5, anchor='w')
+    num_processes_helper_label = tk.Label(num_processes_frame, text=" ⍰ ")
+    num_processes_helper_label.pack(side=tk.LEFT, padx=5)
+    Tooltip(num_processes_helper_label,
+            '''
+            Enter the number of processes to be used for parallel processing.
+            ''')
 
     process_btn = tk.Button(window, text="Start Tasks", command=lambda: start_tasks(sizes))
     process_btn.pack(pady=20, side=tk.RIGHT, padx=20, anchor=tk.SE)
 
-    log_display = ScrolledText(window, height=20, state='normal')
-    log_display.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+    # create a new window to show the logs
+    log_window = tk.Toplevel(window)
+    log_window.title("Job Progress")
+    log_window.geometry("600x400")
+    # hide the log window
+    log_window.withdraw()
+
+    log_display = ScrolledText(log_window, height=20, state='normal')
+    log_display.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)    
 
     window.after(100, update_gui, queue, log_display)
 
