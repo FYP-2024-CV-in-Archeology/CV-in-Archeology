@@ -60,8 +60,12 @@ def getSherdCnt(img, cnts, is24Checker):
     if is24Checker:
         cnts = list(filter(lambda cnt: isSherd24(cnt, blackPos), cnts))
     else:
-        blackPos['green'] = utils.getCardGreenPos(img.copy())
-        cnts = list(filter(lambda cnt: isSherd4(cnt, blackPos), cnts))
+        colorPos = blackPos
+        colorPos['green'] = utils.getColorPos(img.copy(), 'green')
+        colorPos['red'] = utils.getColorPos(img.copy(), 'red')
+        colorPos['yellow'] = utils.getColorPos(img.copy(), 'yellow')
+        colorPos['blue'] = utils.getColorPos(img.copy(), 'blue')
+        cnts = list(filter(lambda cnt: isSherd4(cnt, colorPos), cnts))
     # checking if max() arg is empty also filter out the unqualified images (e.g. ones with no colorChecker)
     return max(cnts, key=cv.contourArea), blackPos
 

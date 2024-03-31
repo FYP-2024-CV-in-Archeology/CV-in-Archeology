@@ -1,6 +1,7 @@
 import numpy as np
 import cv2 as cv
 import rawpy
+from color_correction import percentile_whitebalance
 # define range of colors in HSV
 lower_blue = np.array([135, 65, 35])
 upper_blue = np.array([165, 255, 255])
@@ -62,14 +63,14 @@ def showImage(img):
     cv.waitKey(0)
     cv.destroyAllWindows()
 
-def getCardGreenPos(img):
-    mask = cv.inRange(img, COLOUR_RANGE['green'][0], COLOUR_RANGE['green'][1])
+def getColorPos(img, color):
+    img = cv.cvtColor(img, cv.COLOR_RGB2HSV)
+    mask = cv.inRange(img, COLOUR_RANGE[color][0], COLOUR_RANGE[color][1])
     mask_updated = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel)
     contours, _ = cv.findContours(mask_updated, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
     contours = list(filter(lambda x: len(cv.approxPolyDP(x, 0.01 * cv.arcLength(x, True), True)) == 4, contours))
     contours = sorted(contours, key=cv.contourArea, reverse=True)
-    
     if len(contours) > 0:
         bounding_rect = cv.boundingRect(contours[0])
         return bounding_rect
@@ -124,7 +125,8 @@ def getCardsBlackPos(img, is24Checker = True):
             patchPos['black'] = cv.boundingRect(cnts[0]) # Second largest is the scale card 
             patchPos['black2'] = cv.boundingRect(cnts[1])
     else: 
-        patchPos['black'] = cv.boundingRect(cnts[1]) # The largest may be the blue patch
+        patchPos['black'] = cv.boundingRect(cnts[0])
+        patchPos['black1'] = cv.boundingRect(cnts[1])
         
     return patchPos
 
