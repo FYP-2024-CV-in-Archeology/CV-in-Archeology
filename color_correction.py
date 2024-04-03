@@ -2,7 +2,7 @@ import utils
 import numpy as np
 import rawpy
 import cv2 as cv
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from skimage import img_as_ubyte
 
 
@@ -59,6 +59,9 @@ def get_avg_colour_matrix(avgs):
         list_of_avgs.append(avgs[avg])
     avg_matrix = np.vstack(list_of_avgs)
     return avg_matrix
+
+def getCardsGreenPos(img):
+    mask = cv.inRange()
 
 def color_correction(img, detector, is24Checker): # img is rgb
     # bgrImg = cv.cvtColor(img, cv.COLOR_RGB2BGR)
@@ -149,7 +152,7 @@ def color_correction(img, detector, is24Checker): # img is rgb
         avg = np.mean(roi, axis=(0, 1))
 
         AVG[colour] = avg
-    
+
     target_matrix = get_target_colour_matrix(utils.TARGETS)
 
     avg_matrix = get_avg_colour_matrix(AVG)
@@ -167,8 +170,11 @@ def color_correction(img, detector, is24Checker): # img is rgb
 
 
 if __name__ == "__main__":
-    img = rawpy.imread('/Users/ryan/Desktop/CV-in-Archeology/test_images/1/photos/2.CR3')
+    img = rawpy.imread(r'd:\ararat\data\files\N\38\478130\4419430\33\finds\individual\45\photos\2.CR3')
     assert img is not None, "file could not be read, check with os.path.exists()"
+    detector = cv.mcc.CCheckerDetector_create()
+
+    # is24Checker = utils.detect24Checker(bgrImg.copy(), detector)
     img = img.postprocess()
     # show the image in a window
-    utils.showImage(color_correction(img))
+    utils.showImage(color_correction(img, detector, False))

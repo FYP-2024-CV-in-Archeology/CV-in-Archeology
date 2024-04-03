@@ -38,9 +38,13 @@ def read_path(input_path, start, end):
     return paths
 
 def write(path, img, overwrite):
+    # return
     # if path exists, prompt user to overwrite
     if overwrite or not os.path.exists(path):
         cv.imwrite(path, img)
+        queue.put(f"Overwrote {path}")
+    else:
+        queue.put(f"Did not overwrite {path}")
  
              
 def run(path, dpi, output_tif, sizes, overwrite):
@@ -77,14 +81,17 @@ def run(path, dpi, output_tif, sizes, overwrite):
         filename = int(path.stem)
         
         for size in sizes:
-            write(f'{path.parent}/{filename}' + f'-{size}.jpg', imresize(utils.rotate_img(processed_img, rotation), size), overwrite)
+            if size == 450:
+                write(f'{path.parent}/{filename}' + '.jpg', imresize(utils.rotate_img(processed_img, rotation), size), overwrite)
+            else:
+                write(f'{path.parent}/{filename}' + f'-{size}.jpg', imresize(utils.rotate_img(processed_img, rotation), size), overwrite)
         if output_tif:
             write(f'{path.parent}/{filename}' + '.tif', scaling_before_cropping(utils.rotate_img(processed_img, rotation), scaling_ratio), overwrite)
                         
         # write cropped image to file system
         cropped_img = scaling(crop(processed_img, sherd_cnt, scaling_ratio), scaling_ratio)
-        write(f'{path.parent}/{filename + 2}' + '.tif', cropped_img, overwrite)
-        write(f'{path.parent}/{filename + 2}' + '.jpg', cropped_img, overwrite)
+        write(f'{path.parent}/{filename}' + '-fabric.tif', cropped_img, overwrite)
+        write(f'{path.parent}/{filename}' + '-fabric.jpg', cropped_img, overwrite)
         # cv.imwrite(f"outputs/{path.parent.parent.name}_{path.stem}.jpg", cropped_img)
 
         queue.put(f"Finished {path}")

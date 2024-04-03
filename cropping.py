@@ -63,7 +63,7 @@ def getSherdCnt(img, cnts, is24Checker):
         colorPos = blackPos
         colorPos['green'] = utils.getColorPos(img.copy(), 'green')
         colorPos['red'] = utils.getColorPos(img.copy(), 'red')
-        colorPos['yellow'] = utils.getColorPos(img.copy(), 'yellow')
+        # colorPos['yellow'] = utils.getColorPos(img.copy(), 'yellow')
         colorPos['blue'] = utils.getColorPos(img.copy(), 'blue')
         cnts = list(filter(lambda cnt: isSherd4(cnt, colorPos), cnts))
     # checking if max() arg is empty also filter out the unqualified images (e.g. ones with no colorChecker)
