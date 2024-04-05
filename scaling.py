@@ -38,6 +38,16 @@ def get_contours(img,is24Checker):
     #sort contours based on size
     return cnts
 
+#get_scaling_ratio for 24 color cards
+def get_scaling_ratio(w,h,dpi):
+    #directly get scaling ratio by comparing diagonal length
+    r = dpi / 900.0
+    d = math.sqrt(w**2 + h**2)
+    #3245.0 pixels for color card outer diagonal, 2950 pixels for inner diagonal
+    scaling_ratio = d / (2950.0 * r)
+    return scaling_ratio
+
+#get_scaling_ratio for 4 color cards
 def get_scaling_ratio(w,h,dpi):
     #directly get scaling ratio by comparing diagonal length
     r = dpi / 900.0
@@ -56,7 +66,8 @@ def get_perspective(rows,cols,scaling_ratio):
 def calc_scaling_ratio(img, is24, dpi, patchPos):
     #rows,cols,ch = img.shape
     if(not is24):
-        print("run 4\n")
+        print(type(patchPos))
+        print(patchPos)
         #cnts = get_contours(img,False)
         return 1.0
     else:
