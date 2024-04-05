@@ -50,6 +50,32 @@ TARGETS_NORM = {
     'white': np.array([255,255,255]) / 255.0
 }
 
+# a function to perform thresholding on the image, use otsu for 4 color and adaptive for 24 color cards
+def Thresholding(img, is24, block_size=31):
+    # adaptive thresholding
+    if is24:
+        thresh = cv.adaptiveThreshold(img,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, block_size, 3)
+    else:
+        _,thresh = cv.threshold(img,0,255,cv.THRESH_BINARY_INV+cv.THRESH_OTSU)
+
+    # morphological operations
+    # resize image
+    if max(img.shape) >= 1000:
+        kernel_size = 6
+    else:
+        kernel_size = 5
+
+    kernel = cv.getStructuringElement(cv.MORPH_RECT, (kernel_size, kernel_size))
+    thresh = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
+    filled = np.zeros_like(thresh)
+    cnts, _ = cv.findContours(
+    thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    for cnt in cnts:
+        if validCnt(cnt):
+            cv.drawContours(filled, [cnt], 0, 255, -1)
+
+    filled = cv.morphologyEx(filled, cv.MORPH_OPEN, kernel)
+    return filled
 
 def validCnt(cnt):
     (width, height)= cv.minAreaRect(cnt)[1]
@@ -76,9 +102,59 @@ def getColorPos(img, color):
         return bounding_rect
     else:
         return None
+    
+def collision(rect1, rect2):
+    x1, y1, w1, h1 = rect1
+    x2, y2, w2, h2 = rect2
+    if x1 + w1 < x2 or x2 + w2 < x1 or y1 + h1 < y2 or y2 + h2 < y1:
+        return False
+    return True
+
+def getCardsPos24(detector, img):
+    shape = img.shape
+    patchPos = {}
+    CC = detector.getBestColorChecker().getBox()
+    # get the top left and bottom right corner of the 24 color card, by the maximum and minimum x and y coordinates using max() and min()
+    top_left = [min(CC[0][0], CC[2][0]), min(CC[0][1], CC[2][1])]
+    bottom_right = [max(CC[0][0], CC[2][0]), max(CC[0][1], CC[2][1])]
+
+    x, y = top_left
+    w, h = bottom_right[0]-top_left[0], bottom_right[1]-top_left[1]
+    patchPos['color'] = (int(x), int(y), int(w), int(h))
+    
+
+    thresh = Thresholding(img, True, 15)
+    cnts, _ = cv.findContours(
+    thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+
+    if shape[0] > shape[1]:
+        _, Y = shape
+        scaleCnt = max(list(filter(lambda x: 
+                    (not collision(cv.boundingRect(x), patchPos['color']))
+                    and
+                    ((cv.boundingRect(x)[0]) < Y/5
+                    or
+                    (cv.boundingRect(x)[0] + cv.boundingRect(x)[2]) > (Y * 4/5))
+                    and 
+                    len(cv.approxPolyDP(x, 0.01*cv.arcLength(x, True), True)) == 4
+                    and 
+                    (cv.boundingRect(x)[3] / cv.boundingRect(x)[2]) >= 2.4
+                    and
+                    (cv.boundingRect(x)[3] / cv.boundingRect(x)[2]) <= 2.55
+                    , cnts)), key=cv.contourArea)
+                    
+    else:
+        Y, _ = shape
+        scaleCnt = max(list(filter(lambda x: 
+                    cv.boundingRect(x)[1] > Y/2
+                    , cnts)), key=cv.contourArea)
+    patchPos['scale'] = cv.boundingRect(scaleCnt)
+    return patchPos
+
+
 
 # Detect the black region to guess the positions of 24checker and scaling card in an image 
-def getCardsBlackPos(img, is24Checker = True):
+def getCardsBlackPos(img, is24Checker = False):
     patchPos = {}
     # showImage(img)
     img_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)  # Convert BGR to HSV
@@ -150,7 +226,10 @@ def getCardsBlackPos(img, is24Checker = True):
 def detect_rotation(img, sherdCnt, patchPos):
     sherd_bounding = cv.boundingRect(sherdCnt)
     x, y, _, _ = sherd_bounding
-    x_scale, y_scale, _, _ = patchPos['black'] # !!!! can be optimized
+    if 'black' in patchPos:
+        x_scale, y_scale, _, _ = patchPos['black']
+    else:
+        x_scale, y_scale, _, _ = patchPos['scale']
 
     rotate = 0
     if img.shape[0] < img.shape[1] and y < y_scale:

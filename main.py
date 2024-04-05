@@ -76,13 +76,17 @@ def start_tasks(sizes):
     root = input_folder_entry.get()  # Get parameter from the entry widget
     dpi_value = dpi.get()  # Get the DPI value
     tif = output_tif.get()  # Get the output tif value
-    start = files_start.get()  # Get the start index
-    end = files_end.get()  # Get the end index
+    if files.get():
+        start = files_start.get()  # Get the start index
+        end = files_end.get()  # Get the end index
+    else:
+        start = 0
+        end = 0
     overwrite_files = overwrite.get()  # Get the overwrite value
     processes = num_processes.get()  # Get the number of processes
-
     # show the log window
     log_window.deiconify()
+
 
     # Start the background tasks in a thread
     Thread(target=worker_pool_tasks, args=(root, dpi_value, tif, start, end, sizes, overwrite_files, processes)).start()
@@ -118,7 +122,6 @@ if __name__ == "__main__":
             Enter the path of the folder containing the images to be processed.
             You can either type the path or click the browse button to select the folder.
             ''')
-
 
     # create a frame for the dpi
     dpi_frame = tk.Frame(window)

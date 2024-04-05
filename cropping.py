@@ -8,35 +8,7 @@ import rawpy
 ## Utilities libraries
 import utils
 
-def Thresholding(img, adaptive):
-    # adaptive thresholding
-    if adaptive:
-        thresh = cv.adaptiveThreshold(img,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY_INV, 31, 3)
-    else:
-        _,thresh = cv.threshold(img,0,255,cv.THRESH_BINARY_INV+cv.THRESH_OTSU)
-
-    # morphological operations
-    # resize image
-    if max(img.shape) >= 1000:
-        kernel_size = 6
-    else:
-        kernel_size = 5
-    # kernel_size = 6 if max(img.shape) >= 6000 else 5
-    kernel = cv.getStructuringElement(cv.MORPH_RECT, (kernel_size, kernel_size))
-    thresh = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
-    filled = np.zeros_like(thresh)
-    cnts, _ = cv.findContours(
-    thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    for cnt in cnts:
-        if utils.validCnt(cnt):
-            cv.drawContours(filled, [cnt], 0, 255, -1)
-
-    filled = cv.morphologyEx(filled, cv.MORPH_OPEN, kernel)
-    # filled = cv.resize(filled, (0, 0), fx=2, fy=2)
-    # utils.showImage(filled)
-    return filled
-
-# Guess if a contour is a sherd
+# Guess if a contour is a sherd for 4 color cards
 def isSherd4(cnt, patchPos):
     x, y, w, h = cv.boundingRect(cnt)
     for pos in patchPos.values():
@@ -46,7 +18,7 @@ def isSherd4(cnt, patchPos):
             return False
     return True
 
-# Guess if a contour is a sherd
+# Guess if a contour is a sherd for 24 color cards
 def isSherd24(cnt, patchPos):
     for pt in cnt:
         x, y = pt[0]
@@ -55,26 +27,35 @@ def isSherd24(cnt, patchPos):
                 return False
     return True
 
-def getSherdCnt(img, cnts, is24Checker):
-    blackPos = utils.getCardsBlackPos(img.copy(), is24Checker)
-    if is24Checker:
-        cnts = list(filter(lambda cnt: isSherd24(cnt, blackPos), cnts))
-    else:
-        colorPos = blackPos
-        colorPos['green'] = utils.getColorPos(img.copy(), 'green')
-        colorPos['red'] = utils.getColorPos(img.copy(), 'red')
-        # colorPos['yellow'] = utils.getColorPos(img.copy(), 'yellow')
-        colorPos['blue'] = utils.getColorPos(img.copy(), 'blue')
-        cnts = list(filter(lambda cnt: isSherd4(cnt, colorPos), cnts))
+# get the sherd contour out of all coutours found in the binary image
+def getSherdCnt4(img, cnts):
+    blackPos = utils.getCardsBlackPos(img.copy())
+    # for 4 color card, we need to detect each color separately
+    colorPos = blackPos
+    colorPos['green'] = utils.getColorPos(img.copy(), 'green')
+    colorPos['red'] = utils.getColorPos(img.copy(), 'red')
+    # colorPos['yellow'] = utils.getColorPos(img.copy(), 'yellow')
+    colorPos['blue'] = utils.getColorPos(img.copy(), 'blue')
+    cnts = list(filter(lambda cnt: isSherd4(cnt, colorPos), cnts))
     # checking if max() arg is empty also filter out the unqualified images (e.g. ones with no colorChecker)
     return max(cnts, key=cv.contourArea), blackPos
 
+# get the sherd contour out of all coutours found in the binary image
+def getSherdCnt24(img, cnts, detector):
+    cardPos = utils.getCardsPos24(detector, img)
+    # for 24 color card, we can get the two patches' bounding box directly as all the two cards are enclosed by black
+    cnts = list(filter(lambda cnt: isSherd4(cnt, cardPos), cnts))
+    # checking if max() arg is empty also filter out the unqualified images (e.g. ones with no colorChecker)
+    return max(cnts, key=cv.contourArea), cardPos
+
+# get centroid of a contour using moment
 def getCentroid(cnt):
     M = cv.moments(cnt)
     cx = int(M['m10']/M['m00'])
     cy = int(M['m01']/M['m00'])
     return [cx, cy]
 
+# rotate the image based on the direction of the minimum area rectangle enclosing the sherd
 def cropMinAreaRect(img, cnt):
     rect = cv.minAreaRect(cnt)
     moment = getCentroid(cnt)
@@ -88,16 +69,15 @@ def cropMinAreaRect(img, cnt):
     box = cv.boxPoints(rect)
     moment = [moment]
     pts = np.intp(cv.transform(np.array([box]), M))[0]
+    # rotate moment
     moment_transformed = np.intp(cv.transform(np.array([moment]), M))[0]
     pts[pts < 0] = 0
     w = pts[2][0] - pts[1][0]
     h = pts[0][1] - pts[1][1]
-    # img_crop = img_rot[pts[1][1]:pts[0][1], 
-    #                    pts[1][0]:pts[2][0]]
-    
-    # moment_transformed = [moment_transformed[0][0] - pts[1][0], moment_transformed[0][1] - pts[1][1]]
+
     return img_rot, moment_transformed, h > w
 
+# crop the rotated image from the moment
 def crop_from_moment(img, moment, w, h, vertical):
     x, y = moment[0]
     if not vertical:
@@ -106,27 +86,27 @@ def crop_from_moment(img, moment, w, h, vertical):
         cropped = img[(y - w//2) : (y + w//2), (x - h//2) : (x + h//2)]
     return cropped
 
-
-def detectSherd(img, adaptive=True):
+# detect the sherd contour in the input image
+def detectSherd(img, detector, is24=True):
 
     blur = cv.GaussianBlur(img,(5,5),0)
     img_g = cv.cvtColor(blur, cv.COLOR_BGR2GRAY)
     # thresholding
-    thresh = Thresholding(img_g, adaptive)
+    thresh = utils.Thresholding(img_g, is24, 101)
 
     # find contours
     cnts, _ = cv.findContours(
     thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     # utils.showImage(img)
     # get the sherd contour
-    sherdCnt, patchPos = getSherdCnt(img, cnts, adaptive)
+    if is24:
+        sherdCnt, patchPos = getSherdCnt24(img_g, cnts, detector)
+    else:
+        sherdCnt, patchPos = getSherdCnt4(img, cnts)
 
-    # img_cnt = img.copy()
-    # cv.drawContours(img_cnt, sherdCnt, -1, (0, 255, 0), 30)
-    # utils.showImage(img_cnt)
     return sherdCnt, patchPos
 
-
+# cropped the sherd from the corrected image
 def crop(img, sherdCnt, scalingRatio=1):
     # crop the minAreaRect
     img_crop, moment, vertical = cropMinAreaRect(img, sherdCnt)
@@ -136,7 +116,6 @@ def crop(img, sherdCnt, scalingRatio=1):
     if crop.shape[0] > crop.shape[1]:
         crop = np.rot90(crop, 3)
 
-    # utils.showImage(crop)
     return crop
 
 if __name__ == "__main__":
