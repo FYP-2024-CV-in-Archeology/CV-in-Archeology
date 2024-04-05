@@ -42,18 +42,9 @@ def get_scaling_ratio(w,h,dpi):
     #directly get scaling ratio by comparing diagonal length
     r = dpi / 900.0
     d = math.sqrt(w**2 + h**2)
-    #3191.34617~3245.0 pixels for diagonal
+    #3245.0 pixels for color card outer diagonal, 2950 pixels for inner diagonal
     scaling_ratio = d / (2950.0 * r)
     return scaling_ratio
-
-def rotate_coordinates(crd):
-    if(crd[1][0][1] < crd[0][0][1]):
-        crd[1][0][1],crd[0][0][1] = crd[0][0][1],crd[1][0][1]
-        crd[1][0][0],crd[0][0][0] = crd[0][0][0],crd[1][0][0]
-    if(crd[3][0][1] < crd[2][0][1]):
-        crd[3][0][1],crd[2][0][1] = crd[2][0][1],crd[3][0][1]
-        crd[3][0][0],crd[2][0][0] = crd[2][0][0],crd[3][0][0]
-    return crd
 
 def get_perspective(rows,cols,scaling_ratio):
     pers = np.float32([[0,0],
@@ -69,20 +60,6 @@ def calc_scaling_ratio(img, is24, dpi, patchPos):
         #cnts = get_contours(img,False)
         return 1.0
     else:
-    #     #cnts = get_contours(img,True)
-    #     print("run 24\n")
-    #     patchPos = utils.getCardsPos24(detector, img)
-    #if len(cnts) < 2: 
-    #    raise Exception("No black squares detected.")
-        
-    #color_para = cv.arcLength(cnts[0], True)
-    #largest area refers to color card
-    #color card used, since the size of color card is known
-    #color_corners = cv.approxPolyDP(cnts[0], 0.04 * color_para, True)
-    #color_corners = rotate_coordinates(color_corners)
-    #print color corners    
-    #l1 = (color_corners[3][0][1] - color_corners[0][0][1])
-    #l2 = (color_corners[3][0][0] - color_corners[0][0][0])
         w = patchPos['color'][2]
         h = patchPos['color'][3]
         l1 = max(w,h)
