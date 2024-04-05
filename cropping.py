@@ -11,6 +11,7 @@ import utils
 # Guess if a contour is a sherd for 4 color cards
 def isSherd4(cnt, patchPos):
     x, y, w, h = cv.boundingRect(cnt)
+
     for pos in patchPos.values():
         # Axis-Aligned Bounding Box
         # Test if two bound box not intersect
@@ -20,6 +21,17 @@ def isSherd4(cnt, patchPos):
 
 # Guess if a contour is a sherd for 24 color cards
 def isSherd24(cnt, patchPos):
+    color = patchPos['color']
+    # eliminate the contour if it's on top of the color patch
+    x, y, w, h = cv.boundingRect(cnt)
+    
+    if color[3] > color[2]:
+        if (x + w/2) > color[0] and (x + w/2) < (color[0] + color[2]):
+            return False
+    else:
+        if (y + h/2) > color[1] and (y + h/2) < (color[1] + color[3]):
+            return False
+
     for pt in cnt:
         x, y = pt[0]
         for pos in patchPos.values():
@@ -44,7 +56,7 @@ def getSherdCnt4(img, cnts):
 def getSherdCnt24(img, cnts, detector):
     cardPos = utils.getCardsPos24(detector, img)
     # for 24 color card, we can get the two patches' bounding box directly as all the two cards are enclosed by black
-    cnts = list(filter(lambda cnt: isSherd4(cnt, cardPos), cnts))
+    cnts = list(filter(lambda cnt: isSherd24(cnt, cardPos), cnts))
     # checking if max() arg is empty also filter out the unqualified images (e.g. ones with no colorChecker)
     return max(cnts, key=cv.contourArea), cardPos
 
