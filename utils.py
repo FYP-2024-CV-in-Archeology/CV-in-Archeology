@@ -146,35 +146,26 @@ def getCardsPos24(detector, img):
                     and 
                     len(cv.approxPolyDP(x, 0.01*cv.arcLength(x, True), True)) == 4
                     and 
-                    (((cv.boundingRect(x)[3] / cv.boundingRect(x)[2]) >= 2.4
+                    (cv.boundingRect(x)[3] / cv.boundingRect(x)[2]) >= 2.4
                     and
-                    (cv.boundingRect(x)[3] / cv.boundingRect(x)[2]) <= 2.55)
-                    or
-                    ((cv.boundingRect(x)[3] / cv.boundingRect(x)[2]) >= 2.05
-                    and
-                    (cv.boundingRect(x)[3] / cv.boundingRect(x)[2]) <= 2.25))
+                    (cv.boundingRect(x)[3] / cv.boundingRect(x)[2]) <= 2.55
 
                     , cnts)), key=cv.contourArea)
                     
     else:
         Y, _ = shape
         scaleCnt = max(list(filter(lambda x: 
-                    cv.contourArea(x) > 100
-                    and
                     (cv.boundingRect(x)[1] + cv.boundingRect(x)[3]) > Y *4/5
                     and
                     (not collision(x, patchPos['color']))
                     and
                     len(cv.approxPolyDP(x, 0.01*cv.arcLength(x, True), True)) == 4
                     and
-                    (((cv.boundingRect(x)[2] / cv.boundingRect(x)[3]) >= 2.4
+                    (cv.boundingRect(x)[2] / cv.boundingRect(x)[3]) >= 2.05
                     and
-                    (cv.boundingRect(x)[2] / cv.boundingRect(x)[3]) <= 2.55)
-                    or
-                    ((cv.boundingRect(x)[2] / cv.boundingRect(x)[3]) >= 2.05
-                    and
-                    (cv.boundingRect(x)[2] / cv.boundingRect(x)[3]) <= 2.25))
-                    
+                    (cv.boundingRect(x)[2] / cv.boundingRect(x)[3]) <= 2.55
+                    and 
+                    cv.contourArea(x) > 100
                     , cnts)), key=cv.contourArea)
     patchPos['scale'] = cv.boundingRect(scaleCnt)
     return patchPos
