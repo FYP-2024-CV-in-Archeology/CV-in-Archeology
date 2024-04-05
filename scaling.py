@@ -52,8 +52,8 @@ def get_scaling_ratio4(w,h,dpi):
     #directly get scaling ratio by comparing diagonal length
     r = dpi / 900.0
     d = math.sqrt(w**2 + h**2)
-    #3245.0 pixels for color card outer diagonal, 2950 pixels for inner diagonal
-    scaling_ratio = d / (2950.0 * r)
+    # 6cm for the distance between red & blue contour, around 2125.99 pixels
+    scaling_ratio = d / (2126.0 * r)
     return scaling_ratio
 
 def get_perspective(rows,cols,scaling_ratio):
@@ -66,16 +66,36 @@ def get_perspective(rows,cols,scaling_ratio):
 def calc_scaling_ratio(img, is24, dpi, patchPos):
     #rows,cols,ch = img.shape
     if(not is24):
-        
-        print(type(patchPos))
-        print(patchPos)
-        #cnts = get_contours(img,False)
-        w = 300
-        h = 100
+        # black, black1, green, red, blue 547-731 567-732 544-722 543-722
+        #blackw = patchPos['black'][2]       
+        #blackh = patchPos['black'][3]
+        #blackl1 = max(blackw,blackh)
+        #blackl2 = min(blackw,blackh)
+        #black1w = patchPos['black1'][2]       
+        #black1h = patchPos['black1'][3]
+        #black1l1 = max(black1w,black1h)
+        #black1l2 = min(black1w,black1h)
+        #greenw = patchPos['green'][2]      
+        #greenh = patchPos['green'][3]
+        #greenl1 = max(greenw,greenh)
+        #greenl2 = min(greenw,greenh)
+        #bluew = patchPos['blue'][2]       
+        #blueh = patchPos['blue'][3]
+        #bluel1 = max(bluew,blueh)
+        #bluel2 = min(bluew,blueh)
+        #redw = patchPos['red'][2]      
+        #redh = patchPos['red'][3]
+        #redl1 = max(redw,redh)
+        #redl2 = min(redw,redh)
+        bluex = patchPos['blue'][0]
+        bluey = patchPos['blue'][1]
+        redx = patchPos['red'][0]
+        redy = patchPos['red'][1]
+        w = abs(bluex - redx)
+        h = abs(bluey - redy)
         l1 = max(w,h)
         l2 = min(w,h)
         scaling_ratio = get_scaling_ratio4(l1,l2,dpi)
-        return 1.0
     else:
         w = patchPos['color'][2]
         h = patchPos['color'][3]
