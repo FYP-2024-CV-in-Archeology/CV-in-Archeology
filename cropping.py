@@ -32,11 +32,9 @@ def isSherd24(cnt, patchPos):
         if (y + h/2) > color[1] and (y + h/2) < (color[1] + color[3]):
             return False
 
-    for pt in cnt:
-        x, y = pt[0]
-        for pos in patchPos.values():
-            if not (x < pos[0] or x > (pos[0] + pos[2]) or y > (pos[1] + pos[3]) or y < pos[1]):
-                return False
+    for pos in patchPos.values():
+        if not ((x + w) < pos[0] or x > (pos[0] + pos[2]) or y > (pos[1] + pos[3]) or (y + h) < pos[1]):
+            return False
     return True
 
 # get the sherd contour out of all coutours found in the binary image
