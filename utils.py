@@ -1,7 +1,6 @@
 import numpy as np
 import cv2 as cv
 import rawpy
-from color_correction import percentile_whitebalance
 # define range of colors in HSV
 lower_blue = np.array([135, 65, 35])
 upper_blue = np.array([165, 255, 255])
@@ -103,11 +102,20 @@ def getColorPos(img, color):
     else:
         return None
     
-def collision(rect1, rect2):
-    x1, y1, w1, h1 = rect1
-    x2, y2, w2, h2 = rect2
-    if x1 + w1 < x2 or x2 + w2 < x1 or y1 + h1 < y2 or y2 + h2 < y1:
+
+# Guess if a contour is a sherd for 4 color cards
+def collision(cnt, pos):
+    x1, y1, w1, h1 = cv.boundingRect(cnt)
+    x2, y2, w2, h2 = pos
+ 
+    # Check if one rectangle is to the left of the other
+    if x1 + w1 <= x2 or x2 + w2 <= x1:
         return False
+    
+    # Check if one rectangle is above the other
+    if y1 + h1 <= y2 or y2 + h2 <= y1:
+        return False
+    
     return True
 
 def getCardsPos24(detector, img):
@@ -130,7 +138,7 @@ def getCardsPos24(detector, img):
     if shape[0] > shape[1]:
         _, Y = shape
         scaleCnt = max(list(filter(lambda x: 
-                    (not collision(cv.boundingRect(x), patchPos['color']))
+                    (not collision(x, patchPos['color']))
                     and
                     ((cv.boundingRect(x)[0]) < Y/5
                     or
@@ -147,6 +155,14 @@ def getCardsPos24(detector, img):
         Y, _ = shape
         scaleCnt = max(list(filter(lambda x: 
                     cv.boundingRect(x)[1] > Y/2
+                    and
+                    (not collision(x, patchPos['color']))
+                    and
+                    len(cv.approxPolyDP(x, 0.01*cv.arcLength(x, True), True)) == 4
+                    and
+                    (cv.boundingRect(x)[2] / cv.boundingRect(x)[3]) >= 2.4
+                    and
+                    (cv.boundingRect(x)[2] / cv.boundingRect(x)[3]) <= 2.55
                     , cnts)), key=cv.contourArea)
     patchPos['scale'] = cv.boundingRect(scaleCnt)
     return patchPos
