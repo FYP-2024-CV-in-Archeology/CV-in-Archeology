@@ -48,7 +48,7 @@ def get_scaling_ratio(w,h,dpi):
     return scaling_ratio
 
 #get_scaling_ratio for 4 color cards
-def get_scaling_ratio(w,h,dpi):
+def get_scaling_ratio4(w,h,dpi):
     #directly get scaling ratio by comparing diagonal length
     r = dpi / 900.0
     d = math.sqrt(w**2 + h**2)
@@ -66,9 +66,15 @@ def get_perspective(rows,cols,scaling_ratio):
 def calc_scaling_ratio(img, is24, dpi, patchPos):
     #rows,cols,ch = img.shape
     if(not is24):
+        
         print(type(patchPos))
         print(patchPos)
         #cnts = get_contours(img,False)
+        w = 300
+        h = 100
+        l1 = max(w,h)
+        l2 = min(w,h)
+        scaling_ratio = get_scaling_ratio4(l1,l2,dpi)
         return 1.0
     else:
         w = patchPos['color'][2]
