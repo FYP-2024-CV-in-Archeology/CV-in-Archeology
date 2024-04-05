@@ -103,9 +103,6 @@ def scaling_before_cropping(img, scaling_ratio):
     #input original size picture
     #output resized full scale picture
     rows,cols,ch = img.shape
-    # get input picture size
-    # cols = cols * scaling_ratio
-    # rows = rows * scaling_ratio
     original_pers = get_perspective(rows,cols,1.0)
     target_pers = get_perspective(rows,cols,scaling_ratio)
     
