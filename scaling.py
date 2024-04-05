@@ -43,8 +43,9 @@ def get_scaling_ratio(w,h,dpi):
     #directly get scaling ratio by comparing diagonal length
     r = dpi / 900.0
     d = math.sqrt(w**2 + h**2)
-    #3245.0 pixels for color card outer diagonal, 2950 pixels for inner diagonal
-    scaling_ratio = d / (2950.0 * r)
+    #3245.0 pixels for color card outer diagonal, 
+    #2950 pixels for inner diagonal, 2940 for detection inaccuracy
+    scaling_ratio = d / (2940.0 * r)
     return scaling_ratio
 
 #get_scaling_ratio for 4 color cards
@@ -53,7 +54,8 @@ def get_scaling_ratio4(w,h,dpi):
     r = dpi / 900.0
     d = math.sqrt(w**2 + h**2)
     # 6cm for the distance between red & blue contour, around 2125.99 pixels
-    scaling_ratio = d / (2126.0 * r)
+    # 2145 for detection inaccuracy
+    scaling_ratio = d / (2145.0 * r)
     return scaling_ratio
 
 def get_perspective(rows,cols,scaling_ratio):
