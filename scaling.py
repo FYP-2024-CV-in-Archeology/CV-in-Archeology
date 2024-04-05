@@ -8,36 +8,6 @@ import utils
 import cropping
 from color_correction import color_correction
 
-
-
-def get_black_color_range():
-    lower_black = np.array([0, 0, 0])
-    upper_black = np.array([179, 255, 75])
-    black_color_range = {'black': [lower_black, upper_black]}
-    return black_color_range
-
-def get_contours(img,is24Checker):
-    #is24Checker = True
-    COLOR_RANGE = get_black_color_range()
-    img_hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)  # Convert BGR to HSV
-    img_hsv = cv.blur(img_hsv, (5,5)) #Smoothens the sharp edges and cover highlights
-    black_mask = cv.inRange(
-        img_hsv, COLOR_RANGE['black'][0], COLOR_RANGE['black'][1])
-
-    kernel = cv.getStructuringElement(cv.MORPH_RECT, (10, 10))
-    mask = cv.morphologyEx(black_mask.copy(), cv.MORPH_OPEN, kernel)
-
-    cnts, _ = cv.findContours(
-        mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-
-    #Fill the black color to get the card
-    #Get Rectangles
-    cnts = list(filter(lambda x: len(cv.approxPolyDP(
-            x, 0.05*cv.arcLength(x, True), True) == 4), cnts))
-    cnts = sorted(cnts, reverse=True, key=cv.contourArea)
-    #sort contours based on size
-    return cnts
-
 #get_scaling_ratio for 24 color cards
 def get_scaling_ratio(w,h,dpi):
     #directly get scaling ratio by comparing diagonal length
@@ -58,6 +28,7 @@ def get_scaling_ratio4(w,h,dpi):
     scaling_ratio = d / (2145.0 * r)
     return scaling_ratio
 
+#get target perspective of picture
 def get_perspective(rows,cols,scaling_ratio):
     pers = np.float32([[0,0],
                        [rows/scaling_ratio,0],
@@ -65,10 +36,12 @@ def get_perspective(rows,cols,scaling_ratio):
                        [rows/scaling_ratio,cols/scaling_ratio]])
     return pers
 
+#calculate the scaling ratio
 def calc_scaling_ratio(img, is24, dpi, patchPos):
     #rows,cols,ch = img.shape
     if(not is24):
-        # black, black1, green, red, blue 547-731 567-732 544-722 543-722
+        #4 color card
+        #black, black1, green, red, blue 547-731 567-732 544-722 543-722
         #blackw = patchPos['black'][2]       
         #blackh = patchPos['black'][3]
         #blackl1 = max(blackw,blackh)
@@ -99,6 +72,7 @@ def calc_scaling_ratio(img, is24, dpi, patchPos):
         l2 = min(w,h)
         scaling_ratio = get_scaling_ratio4(l1,l2,dpi)
     else:
+        #24 color card
         w = patchPos['color'][2]
         h = patchPos['color'][3]
         l1 = max(w,h)
@@ -107,6 +81,9 @@ def calc_scaling_ratio(img, is24, dpi, patchPos):
     
     return scaling_ratio
 
+#carry out scaling based on scaling ratio
+#keep the scaling part after color correction & cropping
+#to minimize the impact on other parts
 def scaling(img, scaling_ratio):
     #input cropped picture
     #output a 1000 * 500 picture
@@ -120,6 +97,8 @@ def scaling(img, scaling_ratio):
     dst = cv.warpPerspective(img,geocal,(int(cols/scaling_ratio),int(rows/scaling_ratio)),cv.INTER_LANCZOS4)
     return dst
 
+#carry out scaling based on scaling ratio
+#directly get the whole scaled picture (without cropping)
 def scaling_before_cropping(img, scaling_ratio):
     #input original size picture
     #output resized full scale picture
