@@ -38,13 +38,13 @@ def read_path(input_path, start, end):
     return paths
 
 def write(path, img, overwrite):
-    # return
+    return
     # if path exists, prompt user to overwrite
-    if overwrite or not os.path.exists(path):
-        cv.imwrite(path, img)
-        queue.put(f"Overwrote {path}")
-    else:
-        queue.put(f"Did not overwrite {path}")
+    # if overwrite or not os.path.exists(path):
+    #     cv.imwrite(path, img)
+    #     queue.put(f"Overwrote {path}")
+    # else:
+    #     queue.put(f"Did not overwrite {path}")
  
              
 def run(path, dpi, output_tif, sizes, overwrite):
@@ -59,13 +59,14 @@ def run(path, dpi, output_tif, sizes, overwrite):
         is24 = utils.detect24Checker(cv.cvtColor(raw_img, cv.COLOR_RGB2BGR), detector)  # must be bgr
 
         # calculate the scaling ratio
-        scaling_ratio = calc_scaling_ratio(raw_img, is24, dpi)
+
+        # detect sherd on original image
+        sherd_cnt, patch_pos = detectSherd(raw_img, detector, is24)
+
+        scaling_ratio = calc_scaling_ratio(raw_img, is24, dpi, patch_pos)
 
         # initial white balance
         white_balance_img = raw_img if is24 else percentile_whitebalance(raw_img, 97.5)        
-
-        # detect sherd on original image
-        sherd_cnt, patch_pos = detectSherd(raw_img, is24)
 
         # detect rotation
         rotation = utils.detect_rotation(white_balance_img, sherd_cnt, patch_pos)
@@ -87,12 +88,13 @@ def run(path, dpi, output_tif, sizes, overwrite):
                 write(f'{path.parent}/{filename}' + f'-{size}.jpg', imresize(utils.rotate_img(processed_img, rotation), size), overwrite)
         if output_tif:
             write(f'{path.parent}/{filename}' + '.tif', scaling_before_cropping(utils.rotate_img(processed_img, rotation), scaling_ratio), overwrite)
+            cv.imwrite(f"output/{path.parent.parent.name}_{path.stem}.tif", scaling_before_cropping(utils.rotate_img(processed_img, rotation), scaling_ratio))
                         
         # write cropped image to file system
         cropped_img = scaling(crop(processed_img, sherd_cnt, scaling_ratio), scaling_ratio)
         write(f'{path.parent}/{filename}' + '-fabric.tif', cropped_img, overwrite)
         write(f'{path.parent}/{filename}' + '-fabric.jpg', cropped_img, overwrite)
-        # cv.imwrite(f"outputs/{path.parent.parent.name}_{path.stem}.jpg", cropped_img)
+        cv.imwrite(f"output/{path.parent.parent.name}_{path.stem}.jpg", cropped_img)
 
         queue.put(f"Finished {path}")
         print("Finished", path)

@@ -5,7 +5,9 @@ import cv2 as cv
 import matplotlib.pyplot as plt
 import math
 import utils
+import cropping
 from color_correction import color_correction
+
 
 
 def get_black_color_range():
@@ -41,7 +43,7 @@ def get_scaling_ratio(w,h,dpi):
     r = dpi / 900.0
     d = math.sqrt(w**2 + h**2)
     #3191.34617~3245.0 pixels for diagonal
-    scaling_ratio = d / (3245.0 * r)
+    scaling_ratio = d / (2950.0 * r)
     return scaling_ratio
 
 def rotate_coordinates(crd):
@@ -60,28 +62,32 @@ def get_perspective(rows,cols,scaling_ratio):
                        [rows/scaling_ratio,cols/scaling_ratio]])
     return pers
 
-def calc_scaling_ratio(img, is24Checker, dpi):
-    rows,cols,ch = img.shape
-    if(not is24Checker):
+def calc_scaling_ratio(img, is24, dpi, patchPos):
+    #rows,cols,ch = img.shape
+    if(not is24):
+        print("run 4\n")
         #cnts = get_contours(img,False)
         return 1.0
     else:
-        cnts = get_contours(img,True)
-    
-    if len(cnts) < 2: 
-        raise Exception("No black squares detected.")
+    #     #cnts = get_contours(img,True)
+    #     print("run 24\n")
+    #     patchPos = utils.getCardsPos24(detector, img)
+    #if len(cnts) < 2: 
+    #    raise Exception("No black squares detected.")
         
-    color_para = cv.arcLength(cnts[0], True)
+    #color_para = cv.arcLength(cnts[0], True)
     #largest area refers to color card
     #color card used, since the size of color card is known
-    color_corners = cv.approxPolyDP(cnts[0], 0.04 * color_para, True)
-    
-    color_corners = rotate_coordinates(color_corners)
-    
+    #color_corners = cv.approxPolyDP(cnts[0], 0.04 * color_para, True)
+    #color_corners = rotate_coordinates(color_corners)
     #print color corners    
-    l1 = (color_corners[3][0][1] - color_corners[0][0][1])
-    l2 = (color_corners[3][0][0] - color_corners[0][0][0])
-    scaling_ratio = get_scaling_ratio(l1,l2,dpi)
+    #l1 = (color_corners[3][0][1] - color_corners[0][0][1])
+    #l2 = (color_corners[3][0][0] - color_corners[0][0][0])
+        w = patchPos['color'][2]
+        h = patchPos['color'][3]
+        l1 = max(w,h)
+        l2 = min(w,h)
+        scaling_ratio = get_scaling_ratio(l1,l2,dpi)
     
     return scaling_ratio
 
