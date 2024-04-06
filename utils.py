@@ -118,24 +118,35 @@ def collision(cnt, pos):
     
     return True
 
+# function to detect the position of the color card and the scale card in the 24 color image
 def getCardsPos24(detector, img):
     shape = img.shape
     patchPos = {}
+    # get the color card position stored in the detector
     CC = detector.getBestColorChecker().getBox()
-    # get the top left and bottom right corner of the 24 color card, by the maximum and minimum x and y coordinates using max() and min()
+
+    # get the top left and bottom right corner of the 24 color card, by the maximum and minimum x and y coordinates
     top_left = [min(CC[0][0], CC[2][0]), min(CC[0][1], CC[2][1])]
     bottom_right = [max(CC[0][0], CC[2][0]), max(CC[0][1], CC[2][1])]
 
+    # get the color card position in bounding box format
     x, y = top_left
     w, h = bottom_right[0]-top_left[0], bottom_right[1]-top_left[1]
     patchPos['color'] = (int(x), int(y), int(w), int(h))
     
-
+    # thresholding the image again with a smaller block size to highlight the scale card
     thresh = Thresholding(img, True, 15)
     cnts, _ = cv.findContours(
     thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
+    # scale bar detection machenism:
+    # 1. No collision with the color card
+    # 2. The scale bar should be near the edge of the image
+    # 3. The scale bar should be a rectangle
+    # 4. The aspect ratio of the scale bar should be around 2.5
+
     if shape[0] > shape[1]:
+        # vertical image
         _, Y = shape
         scaleCnt = max(list(filter(lambda x: 
                     (not collision(x, patchPos['color']))
@@ -146,13 +157,15 @@ def getCardsPos24(detector, img):
                     and 
                     len(cv.approxPolyDP(x, 0.01*cv.arcLength(x, True), True)) == 4
                     and 
-                    (cv.boundingRect(x)[3] / cv.boundingRect(x)[2]) >= 2.4
+                    (cv.boundingRect(x)[3] / cv.boundingRect(x)[2]) >= 2.05
                     and
-                    (cv.boundingRect(x)[3] / cv.boundingRect(x)[2]) <= 2.55
-
+                    (cv.boundingRect(x)[3] / cv.boundingRect(x)[2]) <= 2.65
+                    and
+                    cv.contourArea(x) > 100
                     , cnts)), key=cv.contourArea)
                     
     else:
+        # horizontal image
         Y, _ = shape
         scaleCnt = max(list(filter(lambda x: 
                     (cv.boundingRect(x)[1] + cv.boundingRect(x)[3]) > Y *4/5
@@ -172,7 +185,7 @@ def getCardsPos24(detector, img):
 
 
 
-# Detect the black region to guess the positions of 24checker and scaling card in an image 
+# Detect the black region to guess the positions of the 4 color cards
 def getCardsBlackPos(img, is24Checker = False):
     patchPos = {}
     # showImage(img)
@@ -181,60 +194,18 @@ def getCardsBlackPos(img, is24Checker = False):
     black_mask = cv.inRange(
         img_hsv, COLOUR_RANGE['black'][0], COLOUR_RANGE['black'][1])
     kernel = cv.getStructuringElement(cv.MORPH_RECT, (10, 10))
-    
-    if is24Checker:
-        mask = cv.morphologyEx(black_mask.copy(), cv.MORPH_CLOSE, kernel, iterations=2)
-    else:
-        mask = cv.morphologyEx(black_mask.copy(), cv.MORPH_OPEN, kernel)
+
+    mask = cv.morphologyEx(black_mask.copy(), cv.MORPH_OPEN, kernel)
     
     cnts, _ = cv.findContours(
         mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     
     # Fill the black color to get the card
-    # if is24Checker is True: 
-    # plt.imshow(cv.drawContours(img, cnts, -1, 255, -1))
-    if is24Checker:
-        mask = cv.drawContours(mask, cnts, -1, 255, -1)
-        cnts, _ = cv.findContours(
-        mask, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-        # Get rectangle only
-        colorCnt = max(list(filter(lambda x: 
-                           (len(cv.approxPolyDP(x, 0.01*cv.arcLength(x, True), True)) <= 6
-                            and  
-                            len(cv.approxPolyDP(x, 0.01*cv.arcLength(x, True), True)) >= 4)
-                            , cnts)), key=cv.contourArea)
-  
-        if mask.shape[0] > mask.shape[1]:
-            _, Y = mask.shape
-            scaleCnt = sorted(list(filter(lambda x: 
-                        (cv.boundingRect(x)[0]) < Y/5
-                        or
-                        (cv.boundingRect(x)[0] + cv.boundingRect(x)[2]) > (Y * 4/5)
-                        , cnts)), key=cv.contourArea, reverse=True)[1]
-        else:
-            Y, _ = mask.shape
-            scaleCnt = max(list(filter(lambda x: 
-                        cv.boundingRect(x)[1] > Y/2
-                        , cnts)), key=cv.contourArea)
-        cnts = [colorCnt, scaleCnt]
-        # plt.imshow(mask)
-    else:
-        cnts = list(filter(lambda x: len(cv.approxPolyDP(
-            x, 0.02*cv.arcLength(x, True), True)) == 4, cnts))       
+    cnts = list(filter(lambda x: len(cv.approxPolyDP(
+        x, 0.02*cv.arcLength(x, True), True)) == 4, cnts))       
 
-    # plt.imshow(cv.drawContours(img, cnts, -1, 255, -1))
-    
-    # print(len(cnts))
     if len(cnts) < 2: 
         raise Exception("No black squares detected.")
-    if is24Checker is True: 
-        _, _, w, h = cv.boundingRect(cnts[1])
-        if w/h > 2 or h/w > 2: # Determine if is scale card
-            patchPos['black'] = cv.boundingRect(cnts[1]) 
-            patchPos['black2'] = cv.boundingRect(cnts[0])
-        else: 
-            patchPos['black'] = cv.boundingRect(cnts[0]) # Second largest is the scale card 
-            patchPos['black2'] = cv.boundingRect(cnts[1])
     else: 
         cnts = sorted(cnts, reverse=True, key=cv.contourArea)
         patchPos['black'] = cv.boundingRect(cnts[0])
