@@ -163,7 +163,7 @@ def getCardsPos24(detector, img):
                     and
                     (cv.boundingRect(x)[2] / cv.boundingRect(x)[3]) >= 2.05
                     and
-                    (cv.boundingRect(x)[2] / cv.boundingRect(x)[3]) <= 2.55
+                    (cv.boundingRect(x)[2] / cv.boundingRect(x)[3]) <= 2.65
                     and 
                     cv.contourArea(x) > 100
                     , cnts)), key=cv.contourArea)
