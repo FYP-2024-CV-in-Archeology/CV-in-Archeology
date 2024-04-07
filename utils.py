@@ -94,7 +94,10 @@ def getColorPos(img, color):
     mask_updated = cv.morphologyEx(mask, cv.MORPH_CLOSE, kernel)
     contours, _ = cv.findContours(mask_updated, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
-    contours = list(filter(lambda x: len(cv.approxPolyDP(x, 0.02 * cv.arcLength(x, True), True)) == 4, contours))
+    contours = list(filter(lambda x: len(cv.approxPolyDP(x, 0.02 * cv.arcLength(x, True), True)) == 4
+                           and
+                           cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.95
+                           , contours))
     contours = sorted(contours, key=cv.contourArea, reverse=True)
     if len(contours) > 0:
         bounding_rect = cv.boundingRect(contours[0])
@@ -157,9 +160,7 @@ def getCardsPos24(detector, img):
                     and 
                     len(cv.approxPolyDP(x, 0.01*cv.arcLength(x, True), True)) == 4
                     and 
-                    (cv.boundingRect(x)[3] / cv.boundingRect(x)[2]) >= 2.05
-                    and
-                    (cv.boundingRect(x)[3] / cv.boundingRect(x)[2]) <= 2.65
+                    cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.9
                     and
                     cv.contourArea(x) > 100
                     , cnts)), key=cv.contourArea)
@@ -174,10 +175,8 @@ def getCardsPos24(detector, img):
                     and
                     len(cv.approxPolyDP(x, 0.01*cv.arcLength(x, True), True)) == 4
                     and
-                    (cv.boundingRect(x)[2] / cv.boundingRect(x)[3]) >= 2.05
+                    cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.9
                     and
-                    (cv.boundingRect(x)[2] / cv.boundingRect(x)[3]) <= 2.65
-                    and 
                     cv.contourArea(x) > 100
                     , cnts)), key=cv.contourArea)
     patchPos['scale'] = cv.boundingRect(scaleCnt)
@@ -201,8 +200,11 @@ def getCardsBlackPos(img, is24Checker = False):
         mask.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
     
     # Fill the black color to get the card
-    cnts = list(filter(lambda x: len(cv.approxPolyDP(
-        x, 0.02*cv.arcLength(x, True), True)) == 4, cnts))       
+    cnts = list(filter(lambda x: 
+                       len(cv.approxPolyDP(x, 0.02*cv.arcLength(x, True), True)) == 4
+                       and 
+                       cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.95
+                       , cnts))       
 
     if len(cnts) < 2: 
         raise Exception("No black squares detected.")
