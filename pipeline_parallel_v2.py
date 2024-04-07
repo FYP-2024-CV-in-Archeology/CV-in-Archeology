@@ -83,18 +83,18 @@ def run(path, dpi, output_tif, sizes, overwrite):
         
         for size in sizes:
             if size == 450:
-                write(f'{path.parent}/{filename}' + '.jpg', imresize(utils.rotate_img(processed_img, rotation), size), overwrite)
+                write(f'{path.parent}/{filename}' + '.jpg', imresize(utils.rotate_img(processed_img, rotation, is24), size), overwrite)
             else:
-                write(f'{path.parent}/{filename}' + f'-{size}.jpg', imresize(utils.rotate_img(processed_img, rotation), size), overwrite)
+                write(f'{path.parent}/{filename}' + f'-{size}.jpg', imresize(utils.rotate_img(processed_img, rotation, is24), size), overwrite)
         if output_tif:
-            write(f'{path.parent}/{filename}' + '.tif', scaling_before_cropping(utils.rotate_img(processed_img, rotation), scaling_ratio), overwrite)
-            cv.imwrite(f"output/{path.parent.parent.name}_{path.stem}.tif", scaling_before_cropping(utils.rotate_img(processed_img, rotation), scaling_ratio))
+            write(f'{path.parent}/{filename}' + '.tif', scaling_before_cropping(utils.rotate_img(processed_img, rotation, is24), scaling_ratio), overwrite)
+            cv.imwrite(f"test_out/{path.parent.parent.name}_{path.stem}.tif", scaling_before_cropping(utils.rotate_img(processed_img, rotation, is24), scaling_ratio))
                         
         # write cropped image to file system
         cropped_img = scaling(crop(processed_img, sherd_cnt, scaling_ratio), scaling_ratio)
         write(f'{path.parent}/{filename}' + '-fabric.tif', cropped_img, overwrite)
         write(f'{path.parent}/{filename}' + '-fabric.jpg', cropped_img, overwrite)
-        cv.imwrite(f"output/{path.parent.parent.name}_{path.stem}.jpg", cropped_img)
+        cv.imwrite(f"test_out/{path.parent.parent.name}_{path.stem}.jpg", cropped_img)
 
         queue.put(f"Finished {path}")
         print("Finished", path)
