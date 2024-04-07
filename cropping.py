@@ -13,6 +13,8 @@ def isSherd4(cnt, patchPos):
     x, y, w, h = cv.boundingRect(cnt)
 
     for pos in patchPos.values():
+        if pos == None:
+            continue
         # Axis-Aligned Bounding Box
         # Test if two bound box not intersect
         if not ((x + w) < pos[0] or x > (pos[0] + pos[2]) or y > (pos[1] + pos[3]) or (y + h) < pos[1]):
@@ -46,6 +48,7 @@ def getSherdCnt4(img, cnts):
     colorPos['red'] = utils.getColorPos(img.copy(), 'red')
     # colorPos['yellow'] = utils.getColorPos(img.copy(), 'yellow')
     colorPos['blue'] = utils.getColorPos(img.copy(), 'blue')
+    print(colorPos)
     cnts = list(filter(lambda cnt: isSherd4(cnt, colorPos), cnts))
     # checking if max() arg is empty also filter out the unqualified images (e.g. ones with no colorChecker)
     return max(cnts, key=cv.contourArea), blackPos
