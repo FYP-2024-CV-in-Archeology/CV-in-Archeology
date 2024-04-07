@@ -205,11 +205,10 @@ def getCardsBlackPos(img, is24Checker = False):
                        and 
                        cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.90
                        , cnts))       
-
+    cnts = sorted(cnts, reverse=True, key=cv.contourArea)
     if len(cnts) < 2: 
-        raise Exception("No black squares detected.")
+        patchPos['black'] = cv.boundingRect(cnts[0])
     else: 
-        cnts = sorted(cnts, reverse=True, key=cv.contourArea)
         patchPos['black'] = cv.boundingRect(cnts[0])
         patchPos['black1'] = cv.boundingRect(cnts[1])
         
