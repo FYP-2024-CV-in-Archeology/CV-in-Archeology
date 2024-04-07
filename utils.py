@@ -160,7 +160,7 @@ def getCardsPos24(detector, img):
                     and 
                     len(cv.approxPolyDP(x, 0.01*cv.arcLength(x, True), True)) == 4
                     and 
-                    cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.9
+                    cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.85
                     and
                     cv.contourArea(x) > 100
                     , cnts)), key=cv.contourArea)
@@ -175,7 +175,7 @@ def getCardsPos24(detector, img):
                     and
                     len(cv.approxPolyDP(x, 0.01*cv.arcLength(x, True), True)) == 4
                     and
-                    cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.9
+                    cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.85
                     and
                     cv.contourArea(x) > 100
                     , cnts)), key=cv.contourArea)
@@ -203,7 +203,7 @@ def getCardsBlackPos(img, is24Checker = False):
     cnts = list(filter(lambda x: 
                        len(cv.approxPolyDP(x, 0.02*cv.arcLength(x, True), True)) == 4
                        and 
-                       cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.95
+                       cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.90
                        , cnts))       
     cnts = sorted(cnts, reverse=True, key=cv.contourArea)
     if len(cnts) < 2: 
