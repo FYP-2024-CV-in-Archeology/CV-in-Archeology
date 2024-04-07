@@ -19,13 +19,14 @@ def get_scaling_ratio(w,h,dpi):
     return scaling_ratio
 
 #get_scaling_ratio for 4 color cards
-def get_scaling_ratio4(w,h,dpi):
+def get_scaling_ratio4(w,h,dpi,cm):
     #directly get scaling ratio by comparing diagonal length
+    #cm refers to length in cm
     r = dpi / 900.0
     d = math.sqrt(w**2 + h**2)
     # 6cm for the distance between red & blue contour, around 2125.99 pixels
-    # 2145 for detection inaccuracy
-    scaling_ratio = d / (2145.0 * r)
+    # +4 for detection inaccuracy, cover the edge
+    scaling_ratio = d / ( (354.33 * cm + 4) * r)
     return scaling_ratio
 
 #get target perspective of picture
@@ -42,35 +43,58 @@ def calc_scaling_ratio(img, is24, dpi, patchPos):
     if(not is24):
         #4 color card
         #black, black1, green, red, blue 547-731 567-732 544-722 543-722
-        #blackw = patchPos['black'][2]       
-        #blackh = patchPos['black'][3]
-        #blackl1 = max(blackw,blackh)
-        #blackl2 = min(blackw,blackh)
-        #black1w = patchPos['black1'][2]       
-        #black1h = patchPos['black1'][3]
-        #black1l1 = max(black1w,black1h)
-        #black1l2 = min(black1w,black1h)
-        #greenw = patchPos['green'][2]      
-        #greenh = patchPos['green'][3]
-        #greenl1 = max(greenw,greenh)
-        #greenl2 = min(greenw,greenh)
-        #bluew = patchPos['blue'][2]       
-        #blueh = patchPos['blue'][3]
-        #bluel1 = max(bluew,blueh)
-        #bluel2 = min(bluew,blueh)
-        #redw = patchPos['red'][2]      
-        #redh = patchPos['red'][3]
-        #redl1 = max(redw,redh)
-        #redl2 = min(redw,redh)
-        bluex = patchPos['blue'][0]
-        bluey = patchPos['blue'][1]
-        redx = patchPos['red'][0]
-        redy = patchPos['red'][1]
-        w = abs(bluex - redx)
-        h = abs(bluey - redy)
-        l1 = max(w,h)
-        l2 = min(w,h)
-        scaling_ratio = get_scaling_ratio4(l1,l2,dpi)
+        if(patchPos['black'] != None):
+            blackw = patchPos['black'][2]
+            blackh = patchPos['black'][3]
+        state = 0;
+        if(patchPos['blue'] == None):
+            state += 1
+        else:
+            bluex = patchPos['blue'][0]
+            bluey = patchPos['blue'][1]
+            bluew = patchPos['blue'][2]       
+            blueh = patchPos['blue'][3]
+        if(patchPos['red'] == None):
+            state += 2
+        else:
+            redx = patchPos['red'][0]
+            redy = patchPos['red'][1]
+            redw = patchPos['red'][2]
+            redh = patchPos['red'][3]
+        if(patchPos['green'] == None):
+            state += 4
+        else:
+            greenx = patchPos['green'][0]
+            greeny = patchPos['green'][1]
+            greenw = patchPos['green'][2]
+            greenh = patchPos['green'][3]
+        if(state % 4 == 0):
+            # use blue & red, 0/4
+            w = abs(bluex - redx)
+            h = abs(bluey - redy)
+            scaling_ratio = get_scaling_ratio4(w,h,dpi,6.0)
+        elif(state == 3):
+            # use green only, 3
+            scaling_ratio = get_scaling_ratio4(greenw,greenh,dpi,2.478)
+        elif(state == 2):
+            # use blue & green, 2
+            w = abs(bluex - greenx)
+            h = abs(bluey - greeny)
+            scaling_ratio = get_scaling_ratio4(w,h,dpi,2.0)
+        elif(state == 1):
+            # use red & green, 1
+            w = abs(greenx - redx)
+            h = abs(greeny - redy)
+            scaling_ratio = get_scaling_ratio4(w,h,dpi,4.0)
+        elif(state == 5):
+            # use red only, 5
+            scaling_ratio = get_scaling_ratio4(redw,redh,dpi,2.478)
+        elif(state == 6):
+            # use blue only, 6
+            scaling_ratio = get_scaling_ratio4(bluew,blueh,dpi,2.478)
+        else:
+            # use black only, 7
+            scaling_ratio = get_scaling_ratio4(blackw,blackh,dpi,1.0)
     else:
         #24 color card
         w = patchPos['color'][2]
