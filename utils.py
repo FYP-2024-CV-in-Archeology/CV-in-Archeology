@@ -96,7 +96,7 @@ def getColorPos(img, color):
 
     contours = list(filter(lambda x: len(cv.approxPolyDP(x, 0.02 * cv.arcLength(x, True), True)) == 4
                            and
-                           cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.9
+                           cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.95
                            , contours))
     contours = sorted(contours, key=cv.contourArea, reverse=True)
     if len(contours) > 0:
@@ -203,7 +203,7 @@ def getCardsBlackPos(img, is24Checker = False):
     cnts = list(filter(lambda x: 
                        len(cv.approxPolyDP(x, 0.02*cv.arcLength(x, True), True)) == 4
                        and 
-                       cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.90
+                       cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.95
                        , cnts))       
 
     if len(cnts) < 2: 
@@ -235,13 +235,17 @@ def detect_rotation(img, sherdCnt, patchPos):
             rotate = 180
     return rotate
 
-def rotate_img(img, rotate):
-    if rotate == 1:
-        return cv.rotate(img, cv.ROTATE_90_COUNTERCLOCKWISE)
-    elif rotate == -1:
-        return cv.rotate(img, cv.ROTATE_90_CLOCKWISE)
-    elif rotate == 180:
-        return cv.rotate(img, cv.ROTATE_180)
+def rotate_img(img, rotate, is24):
+    if is24:
+        if rotate == 1:
+            return cv.rotate(img, cv.ROTATE_90_COUNTERCLOCKWISE)
+        elif rotate == -1:
+            return cv.rotate(img, cv.ROTATE_90_CLOCKWISE)
+        elif rotate == 180:
+            return cv.rotate(img, cv.ROTATE_180)
+    else:
+        if img.shape[0] > img.shape[1]:
+            return cv.rotate(img, cv.ROTATE_90_COUNTERCLOCKWISE)
 
     return img
 
