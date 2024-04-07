@@ -96,7 +96,7 @@ def getColorPos(img, color):
 
     contours = list(filter(lambda x: len(cv.approxPolyDP(x, 0.02 * cv.arcLength(x, True), True)) == 4
                            and
-                           cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.95
+                           cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.9
                            , contours))
     contours = sorted(contours, key=cv.contourArea, reverse=True)
     if len(contours) > 0:
@@ -203,7 +203,7 @@ def getCardsBlackPos(img, is24Checker = False):
     cnts = list(filter(lambda x: 
                        len(cv.approxPolyDP(x, 0.02*cv.arcLength(x, True), True)) == 4
                        and 
-                       cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.95
+                       cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.90
                        , cnts))       
 
     if len(cnts) < 2: 
