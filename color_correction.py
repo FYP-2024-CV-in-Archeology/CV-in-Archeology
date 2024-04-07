@@ -141,7 +141,10 @@ def color_correction(img, detector, is24Checker): # img is rgb
         mask_updated = cv.morphologyEx(mask, cv.MORPH_CLOSE, utils.kernel)
         contours, _ = cv.findContours(mask_updated, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
-        contours = list(filter(lambda x: len(cv.approxPolyDP(x, 0.01 * cv.arcLength(x, True), True)) == 4, contours))
+        contours = list(filter(lambda x: len(cv.approxPolyDP(x, 0.02 * cv.arcLength(x, True), True)) == 4
+                           and
+                           cv.contourArea(x)/(cv.boundingRect(x)[2]*cv.boundingRect(x)[3]) > 0.95
+                           , contours))
         contours = sorted(contours, key=cv.contourArea, reverse=True)
 
         if len(contours) > 0:
