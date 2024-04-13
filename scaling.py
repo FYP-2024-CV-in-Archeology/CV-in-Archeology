@@ -9,7 +9,7 @@ import cropping
 from color_correction import color_correction
 
 #get_scaling_ratio for 24 color cards
-def get_scaling_ratio(w,h,dpi):
+def get_scaling_ratio_scalebar(w,h,dpi):
     #directly get scaling ratio by comparing diagonal length
     r = dpi / 900.0
     d = math.sqrt(w**2 + h**2)
@@ -18,7 +18,17 @@ def get_scaling_ratio(w,h,dpi):
     #1908.1 pixels for scale bar
     scaling_ratio = d / ( ( 1908.1 + 6 ) * r)
     return scaling_ratio
-
+    
+def get_scaling_ratio_colorbar(w,h,dpi):
+    #directly get scaling ratio by comparing diagonal length
+    r = dpi / 900.0
+    d = math.sqrt(w**2 + h**2)
+    #3230.0 pixels for color card outer diagonal, 5.08*7.62cm/2inch*3inch
+    #2950 pixels for inner diagonal, 2940 for detection inaccuracy
+    #1908.1 pixels for scale bar
+    scaling_ratio = d / ( ( 2940.0 ) * r)
+    return scaling_ratio
+    
 #get_scaling_ratio for 4 color cards
 def get_scaling_ratio4(w,h,dpi,cm):
     #directly get scaling ratio by comparing diagonal length
@@ -100,11 +110,15 @@ def calc_scaling_ratio(img, is24, dpi, patchPos):
         #24 color card
         w = patchPos['scale'][2]
         h = patchPos['scale'][3]
-        #w = patchPos['color'][2]
-        #h = patchPos['color'][3]
         l1 = max(w,h)
         l2 = min(w,h)
-        scaling_ratio = get_scaling_ratio(l1,l2,dpi)
+        s1 = get_scaling_ratio_scalebar(l1,l2,dpi)
+        w = patchPos['color'][2]
+        h = patchPos['color'][3]
+        l1 = max(w,h)
+        l2 = min(w,h)
+        s2 = get_scaling_ratio_colorbar(l1,l2,dpi)
+        scaling_ratio = (s1+s2) / 2
     
     return scaling_ratio
 
