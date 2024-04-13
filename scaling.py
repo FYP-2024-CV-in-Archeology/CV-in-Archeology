@@ -16,7 +16,7 @@ def get_scaling_ratio_scalebar(w,h,dpi):
     #3230.0 pixels for color card outer diagonal, 5.08*7.62cm/2inch*3inch
     #2950 pixels for inner diagonal, 2940 for detection inaccuracy
     #1908.1 pixels for scale bar
-    scaling_ratio = d / ( ( 1908.1 + 6 ) * r)
+    scaling_ratio = d / ( ( 1908.1 ) * r)
     return scaling_ratio
     
 def get_scaling_ratio_colorbar(w,h,dpi):
@@ -24,9 +24,9 @@ def get_scaling_ratio_colorbar(w,h,dpi):
     r = dpi / 900.0
     d = math.sqrt(w**2 + h**2)
     #3230.0 pixels for color card outer diagonal, 5.08*7.62cm/2inch*3inch
-    #2950 pixels for inner diagonal, 2940 for detection inaccuracy
+    #2950 pixels for inner diagonal, 2935 for detection inaccuracy
     #1908.1 pixels for scale bar
-    scaling_ratio = d / ( ( 2940.0 ) * r)
+    scaling_ratio = d / ( ( 2935.0 ) * r)
     return scaling_ratio
     
 #get_scaling_ratio for 4 color cards
