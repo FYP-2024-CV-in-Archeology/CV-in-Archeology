@@ -15,7 +15,8 @@ def get_scaling_ratio(w,h,dpi):
     d = math.sqrt(w**2 + h**2)
     #3230.0 pixels for color card outer diagonal, 5.08*7.62cm/2inch*3inch
     #2950 pixels for inner diagonal, 2940 for detection inaccuracy
-    scaling_ratio = d / (2940.0 * r)
+    #1908.1 pixels for scale bar
+    scaling_ratio = d / (1908.1 * r)
     return scaling_ratio
 
 #get_scaling_ratio for 4 color cards
@@ -97,8 +98,10 @@ def calc_scaling_ratio(img, is24, dpi, patchPos):
             scaling_ratio = get_scaling_ratio4(blackw,blackh,dpi,1.0)
     else:
         #24 color card
-        w = patchPos['color'][2]
-        h = patchPos['color'][3]
+        w = patchPos['scale'][2]
+        h = patchPos['scale'][3]
+        #w = patchPos['color'][2]
+        #h = patchPos['color'][3]
         l1 = max(w,h)
         l2 = min(w,h)
         scaling_ratio = get_scaling_ratio(l1,l2,dpi)
