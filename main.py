@@ -5,7 +5,7 @@ from multiprocessing import Pool, Manager
 import time
 import random
 from threading import Thread
-from pipeline_parallel_v2 import init_worker, read_path, run
+from pipeline_parallel_v2 import init_worker, read_path, run, run_color_correct_only
 
 class Tooltip:
     def __init__(self, widget, text):
@@ -36,13 +36,17 @@ class Tooltip:
             self.tooltip_window.destroy()
             self.tooltip_window = None
 
-def worker_pool_tasks(root, dpi_value, tif, start, end, sizes, overwrite_files, num_processes):
+def worker_pool_tasks(root, dpi_value, tif, start, end, sizes, overwrite_files, num_processes, color_correct_only):
+    print(color_correct_only)
     """Function to submit tasks to the pool with parameters and handle results."""
     t = time.time()
     with Pool(initializer=init_worker, initargs=(queue,), processes=num_processes) as pool:
         pathes = read_path(root, start, end)
-        tasks = [(path, dpi_value, tif, sizes, overwrite_files) for path in pathes]
-        results = pool.starmap_async(run, tasks)
+        tasks = [(path, dpi_value, sizes, overwrite_files, tif) for path in pathes]
+        if not color_correct_only:
+            results = pool.starmap_async(run, tasks)
+        else:
+            results = pool.starmap_async(run_color_correct_only, tasks)
         results.wait()  # Wait for all tasks to complete
         queue.put(None)  # Signal the GUI to stop updating
         queue.put(f"Done! Time taken: {time.time() - t:.2f} seconds")
@@ -84,12 +88,13 @@ def start_tasks(sizes):
         end = 0
     overwrite_files = overwrite.get()  # Get the overwrite value
     processes = num_processes.get()  # Get the number of processes
+    color_correct_only = color_correct.get()  # Get the color correct only value
     # show the log window
     log_window.deiconify()
 
 
     # Start the background tasks in a thread
-    Thread(target=worker_pool_tasks, args=(root, dpi_value, tif, start, end, sizes, overwrite_files, processes)).start()
+    Thread(target=worker_pool_tasks, args=(root, dpi_value, tif, start, end, sizes, overwrite_files, processes, color_correct_only)).start()
 
 if __name__ == "__main__":
     manager = Manager()
@@ -119,8 +124,8 @@ if __name__ == "__main__":
     input_helper_label.pack(side=tk.LEFT, padx=5)
     Tooltip(input_helper_label, 
             '''
-            Enter the path of the folder containing the images to be processed.
-            You can either type the path or click the browse button to select the folder.
+Enter the path of the folder containing the images to be processed.
+You can either type the path or click the browse button to select the folder.
             ''')
 
     # create a frame for the dpi
@@ -140,8 +145,8 @@ if __name__ == "__main__":
     dpi_helper_label.pack(side=tk.LEFT, padx=5)
     Tooltip(dpi_helper_label,
             '''
-            Enter the DPI (Dots Per Inch) of the images to be processed.
-            The default value is 1200.
+Enter the DPI (Dots Per Inch) of the images to be processed.
+The default value is 1200.
             ''')
 
     # add a frame to show the selected dpi
@@ -164,8 +169,8 @@ if __name__ == "__main__":
     tif_helper_label.pack(side=tk.LEFT, pady=5, padx=10, anchor=tk.W)
     Tooltip(tif_helper_label,
             '''
-            Check this box if you want the tif outputs for the corrected images.
-            The generated tif files will be scaled to the DPI value entered.
+Check this box if you want the tif outputs for the corrected images.
+The generated tif files will be scaled to the DPI value entered.
             ''')
     
     # create a frame for checking whether overwrite the existing files
@@ -180,8 +185,24 @@ if __name__ == "__main__":
     overwrite_helper_label.pack(side=tk.LEFT, pady=5, padx=10, anchor=tk.W)
     Tooltip(overwrite_helper_label,
             '''
-            Check this box if you want to overwrite the existing files.
-            If unchecked, the program will not overwrite any existing files.
+Check this box if you want to overwrite the existing files.
+If unchecked, the program will not overwrite any existing files.
+            ''')
+    
+    # create a frame for checking to color correct only
+    color_correct_frame = tk.Frame(window)
+    color_correct_frame.pack(pady=10, padx=10, anchor=tk.W)
+    color_correct = tk.IntVar()
+    color_correct.set(0)
+    color_correct_check = tk.Checkbutton(color_correct_frame, text="Color Correct Only", variable=color_correct)
+    color_correct_check.pack(side=tk.LEFT, pady=5, padx=10, anchor=tk.W)
+    # helper label for the color correct check box
+    color_correct_helper_label = tk.Label(color_correct_frame, text=" ⍰ ")
+    color_correct_helper_label.pack(side=tk.LEFT, pady=5, padx=10, anchor=tk.W)
+    Tooltip(color_correct_helper_label,
+            '''
+Check this box if you want to color correct the images only (for bones and stones).
+If unchecked, the program will perform all the processing steps.
             ''')
 
     # create a frame for selecting files indexes to be processed
@@ -203,8 +224,8 @@ if __name__ == "__main__":
     helper_label.pack(side=tk.LEFT, padx=5)  
     Tooltip(helper_label,
             '''
-            Check this box if you want to specify a range of files to be processed. Enter the start and end indexes of the files, 
-            or uncheck the box to process all the files.
+Check this box if you want to specify a range of files to be processed. Enter the start and end indexes of the files, 
+or uncheck the box to process all the files.
             ''')
     frame2.pack(pady=10, padx=10, anchor=tk.W)
     # insert text
@@ -213,7 +234,6 @@ if __name__ == "__main__":
     files_frame.pack(pady=10, padx=10, anchor=tk.W)
     files_start_entry.pack(side=tk.LEFT, padx=5, anchor='w')
     files_end_entry.pack(side=tk.LEFT, padx=5, anchor='w')
-
 
     scale = tk.IntVar()
     scale.set(0)
@@ -250,9 +270,9 @@ if __name__ == "__main__":
     scale_helper_label.pack(side=tk.LEFT, padx=5)
     Tooltip(scale_helper_label,
             '''
-            Add any specific sizes for the corrected jpgs.
-            By default, one jpg with size 450 * 300 will always be generated.
-            Newly added size should be between 100-5000.
+Add any specific sizes for the corrected jpgs.
+By default, one jpg with size 450 * 300 will always be generated.
+Newly added size should be between 100-5000.
             ''')
     
     # let the users choose the number of processes
@@ -268,7 +288,7 @@ if __name__ == "__main__":
     num_processes_helper_label.pack(side=tk.LEFT, padx=5)
     Tooltip(num_processes_helper_label,
             '''
-            Enter the number of processes to be used for parallel processing.
+Enter the number of processes to be used for parallel processing.
             ''')
 
     process_btn = tk.Button(window, text="Start Tasks", command=lambda: start_tasks(sizes))
