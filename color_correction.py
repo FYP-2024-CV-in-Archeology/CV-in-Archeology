@@ -135,8 +135,10 @@ def color_correction(img, detector, is24Checker): # img is rgb
 
     white_balanced = img.copy()
     hsv_image = cv.cvtColor(white_balanced, cv.COLOR_RGB2HSV)
+    target = utils.TARGETS
 
     for colour in utils.COLOURS:
+        detected = False
         mask = cv.inRange(hsv_image, utils.COLOUR_RANGE[colour][0], utils.COLOUR_RANGE[colour][1])
         mask_updated = cv.morphologyEx(mask, cv.MORPH_CLOSE, utils.kernel)
         contours, _ = cv.findContours(mask_updated, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
@@ -148,15 +150,27 @@ def color_correction(img, detector, is24Checker): # img is rgb
         contours = sorted(contours, key=cv.contourArea, reverse=True)
 
         if len(contours) > 0:
+            detected = True
             bounding_rect = cv.boundingRect(contours[0])
             roi = img[bounding_rect[1]:bounding_rect[1] + bounding_rect[3], 
                     bounding_rect[0]:bounding_rect[0] + bounding_rect[2]]
         
-        avg = np.mean(roi, axis=(0, 1))
+        if detected:
+            avg = np.mean(roi, axis=(0, 1))
+        else:
+            if colour == 'white':
+                avg = np.array([186, 186, 186])
+            elif colour == 'red':
+                avg = np.array([161.56, 161.39, 157.6])
+            else:
+                AVG.pop(colour)
+                target.pop(colour)
 
         AVG[colour] = avg
+    
+    # print(AVG)
 
-    target_matrix = get_target_colour_matrix(utils.TARGETS)
+    target_matrix = get_target_colour_matrix(target)
 
     avg_matrix = get_avg_colour_matrix(AVG)
 
