@@ -2,7 +2,7 @@ import utils
 import numpy as np
 import rawpy
 import cv2 as cv
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from skimage import img_as_ubyte
 
 
@@ -151,7 +151,10 @@ def color_correction(img, detector, is24Checker): # img is rgb
 
         if len(contours) > 0:
             detected = True
-            bounding_rect = cv.boundingRect(contours[0])
+            bounding_rect = cv.boundingRect(contours[0]) if colour != 'black' else cv.boundingRect(contours[1])
+
+            # draw bounding box
+            # cv.rectangle(white_balanced, bounding_rect, (0, 255, 0), 20)
 
             roi = img[bounding_rect[1]:bounding_rect[1] + bounding_rect[3], 
                     bounding_rect[0]:bounding_rect[0] + bounding_rect[2]]
@@ -161,7 +164,7 @@ def color_correction(img, detector, is24Checker): # img is rgb
         so an average value of those successfully detected are used
         '''
 
-        # print(f'{colour} detected: {detected}')
+        # print(f'{colour} detected: {detected}', np.mean(roi, axis=(0, 1)) if detected else None)
         
         if detected:
             avg = np.mean(roi, axis=(0, 1))
@@ -179,6 +182,9 @@ def color_correction(img, detector, is24Checker): # img is rgb
             else:
                 AVG.pop(colour)
                 target.pop(colour)
+
+    # plt.imshow(white_balanced)
+    # plt.show()
 
     
     # print(AVG)
