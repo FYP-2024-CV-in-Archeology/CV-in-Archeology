@@ -152,21 +152,34 @@ def color_correction(img, detector, is24Checker): # img is rgb
         if len(contours) > 0:
             detected = True
             bounding_rect = cv.boundingRect(contours[0])
+
             roi = img[bounding_rect[1]:bounding_rect[1] + bounding_rect[3], 
                     bounding_rect[0]:bounding_rect[0] + bounding_rect[2]]
         
+        '''
+        Sometimes patches can not be detected, 
+        so an average value of those successfully detected are used
+        '''
+
+        print(f'{colour} detected: {detected}')
+        
         if detected:
             avg = np.mean(roi, axis=(0, 1))
+            AVG[colour] = avg
         else:
             if colour == 'white':
-                avg = np.array([186, 186, 186])
+                avg = np.array([186, 186, 186]) # 186.07, 186.42, 186.07 so just round to 186
+                AVG[colour] = avg
             elif colour == 'red':
                 avg = np.array([161.56, 161.39, 157.6])
+                AVG[colour] = avg
+            elif colour == 'yellow':
+                avg = np.array([194.13, 168.91, 46.88])
+                AVG[colour] = avg
             else:
                 AVG.pop(colour)
                 target.pop(colour)
 
-        AVG[colour] = avg
     
     # print(AVG)
 
