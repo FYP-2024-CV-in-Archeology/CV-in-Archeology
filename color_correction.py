@@ -161,7 +161,7 @@ def color_correction(img, detector, is24Checker): # img is rgb
         so an average value of those successfully detected are used
         '''
 
-        print(f'{colour} detected: {detected}')
+        # print(f'{colour} detected: {detected}')
         
         if detected:
             avg = np.mean(roi, axis=(0, 1))
