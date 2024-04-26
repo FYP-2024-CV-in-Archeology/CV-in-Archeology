@@ -41,8 +41,9 @@ def read_path(input_path, start=0, end=0):
 def write(path, img, overwrite):
     # return
     # if path exists, prompt user to overwrite
+    jpg_quality = 100
     if overwrite or not os.path.exists(path):
-        cv.imwrite(path, img)
+        cv.imwrite(path, img, [int(cv.IMWRITE_JPEG_QUALITY), jpg_quality])
         queue.put(f"Wrote {path}")
     else:
         queue.put(f"Did not overwrite {path}")
@@ -52,11 +53,14 @@ def run_color_correct_only(path, dpi=1200, sizes={1000}, overwrite=False, output
     queue.put(f"Color Correcting {path}...")
     try:
         # read image
-        raw_img = utils.imread(path)
+        raw_data = utils.imread(path)
+        raw_img = raw_data.postprocess()
 
         # detect if 24 or 4 color checker
         detector = cv.mcc.CCheckerDetector_create()
         is24 = utils.detect24Checker(cv.cvtColor(raw_img, cv.COLOR_RGB2BGR), detector)  # must be bgr
+        if is24:
+            raw_img =  raw_data.postprocess(use_camera_wb=True)
 
         # initial white balance
         # white_balance_img = raw_img if is24 else percentile_whitebalance(raw_img, 97.5)        
@@ -65,7 +69,7 @@ def run_color_correct_only(path, dpi=1200, sizes={1000}, overwrite=False, output
         color_correct_img = color_correction(raw_img, detector, is24)
 
         # final processing
-        processed_img = color_correct_img if is24 else cv.add(percentile_whitebalance(color_correct_img, 97.5), (15,15,10,0))
+        processed_img = percentile_whitebalance(color_correct_img, 90) if is24 else cv.add(percentile_whitebalance(color_correct_img, 97.5), (15,15,10,0))
 
         # convert to RGB
         processed_img = cv.cvtColor(processed_img, cv.COLOR_BGR2RGB)
@@ -76,6 +80,8 @@ def run_color_correct_only(path, dpi=1200, sizes={1000}, overwrite=False, output
         # rotate image 90 degrees counter-clockwise if vertical
         if processed_img.shape[0] > processed_img.shape[1]:
             processed_img = cv.rotate(processed_img, cv.ROTATE_90_COUNTERCLOCKWISE)
+
+        write(f'{path.parent}/{filename}' + '-original.jpg', processed_img, overwrite)
 
         for size in sizes:
             if size == 450:
@@ -94,11 +100,14 @@ def run(path, dpi=1200, sizes={1000}, overwrite=False, output_tif=False):
     queue.put(f"Processing {path}...")
     try:
         # read image
-        raw_img = utils.imread(path)
+        raw_data = utils.imread(path)
+        raw_img = raw_data.postprocess()
 
         # detect if 24 or 4 color checker
         detector = cv.mcc.CCheckerDetector_create()
         is24 = utils.detect24Checker(cv.cvtColor(raw_img, cv.COLOR_RGB2BGR), detector)  # must be bgr
+        if is24:
+            raw_img =  raw_data.postprocess(use_camera_wb=True)
 
         # detect sherd on original image
         sherd_cnt, patch_pos = detectSherd(raw_img, detector, is24)
@@ -116,7 +125,7 @@ def run(path, dpi=1200, sizes={1000}, overwrite=False, output_tif=False):
         color_correct_img = color_correction(raw_img, detector, is24)
 
         # final processing
-        processed_img = color_correct_img if is24 else cv.add(percentile_whitebalance(color_correct_img, 97.5), (15,15,10,0))
+        processed_img = percentile_whitebalance(color_correct_img, 90) if is24 else cv.add(percentile_whitebalance(color_correct_img, 97.5), (15,15,10,0))
 
         # convert to RGB
         processed_img = cv.cvtColor(processed_img, cv.COLOR_BGR2RGB)
@@ -127,19 +136,22 @@ def run(path, dpi=1200, sizes={1000}, overwrite=False, output_tif=False):
         for size in sizes:
             if size == 450:
                 write(f'{path.parent}/{filename}' + '.jpg', imresize(utils.rotate_img(processed_img, rotation, is24), size), overwrite)
+                # cv.imwrite(f"E:/Users/lxzhu/Desktop/tests/24/{path.parent.parent.name}_{path.stem}.jpg", imresize(utils.rotate_img(processed_img, rotation, is24), size))
             else:
                 write(f'{path.parent}/{filename}' + f'-{size}.jpg', imresize(utils.rotate_img(processed_img, rotation, is24), size), overwrite)
+                # jpg_quality = 100
+                # cv.imwrite(f"E:/Users/lxzhu/Desktop/tests/24/{path.parent.parent.name}_{path.stem}" + f"-{size}.jpg",utils.rotate_img(processed_img, rotation, is24), [int(cv.IMWRITE_JPEG_QUALITY), jpg_quality])
 
         # write scaled and color corrected tif to file system
         if output_tif:
             write(f'{path.parent}/{filename}' + '.tif', scaling_before_cropping(utils.rotate_img(processed_img, rotation, is24), scaling_ratio), overwrite)
-            cv.imwrite(f"E:/Users/yytu/Desktop/FYP_2024/CV-in-Archeology/test_scale/{path.parent.parent.name}_{path.stem}.tif", scaling_before_cropping(utils.rotate_img(processed_img, rotation, is24), scaling_ratio))
+            # cv.imwrite(f"E:/Users/lxzhu/Desktop/tests/24/{path.parent.parent.name}_{path.stem}.tif", scaling_before_cropping(utils.rotate_img(processed_img, rotation, is24), scaling_ratio))
                         
         # write cropped image to file system
         cropped_img = scaling(crop(processed_img, sherd_cnt, scaling_ratio), scaling_ratio)
         write(f'{path.parent}/{filename}' + '-fabric.tif', cropped_img, overwrite)
         write(f'{path.parent}/{filename}' + '-fabric.jpg', cropped_img, overwrite)
-        cv.imwrite(f"E:/Users/yytu/Desktop/FYP_2024/CV-in-Archeology/outputs/{path.parent.parent.name}_{path.stem}.jpg", cropped_img)
+        # cv.imwrite(f"E:/Users/lxzhu/Desktop/tests/24/{path.parent.parent.name}_{path.stem}.jpg", cropped_img)
 
         queue.put(f"Finished {path}")
         print("Finished", path)

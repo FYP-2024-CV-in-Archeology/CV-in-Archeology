@@ -171,10 +171,10 @@ def color_correction(img, detector, is24Checker): # img is rgb
             AVG[colour] = avg
         else:
             if colour == 'white':
-                avg = np.array([186, 186, 186]) # 186.07, 186.42, 186.07 so just round to 186
+                avg = np.array([230, 230, 220]) # 186.07, 186.42, 186.07 so just round to 186
                 AVG[colour] = avg
             elif colour == 'red':
-                avg = np.array([161.56, 161.39, 157.6])
+                avg = np.array([161.56, 51.39, 46.6])
                 AVG[colour] = avg
             elif colour == 'yellow':
                 avg = np.array([194.13, 168.91, 46.88])
