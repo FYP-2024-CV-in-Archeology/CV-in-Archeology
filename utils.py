@@ -268,7 +268,7 @@ def drawPatchPos(img, patchPos):
 # Read a raw image
 def imread(path, scaling_factor=1):
     if 'cr' in path.suffix.lower():
-        img = rawpy.imread(str(path)).postprocess()  # access to the RAW image to a numpy RGB array
+        img = rawpy.imread(str(path))  # access to the RAW image to a numpy RGB array
         # img = cv.resize(img, None, fx=scaling_factor, fy=scaling_factor, interpolation=cv.INTER_LINEAR)
     else:
         img = cv.imread(str(path))
