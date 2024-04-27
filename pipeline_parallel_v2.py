@@ -69,7 +69,7 @@ def run_color_correct_only(path, dpi=1200, sizes={1000}, overwrite=False, output
         color_correct_img = color_correction(raw_img, detector, is24)
 
         # final processing
-        processed_img = percentile_whitebalance(color_correct_img, 90) if is24 else cv.add(percentile_whitebalance(color_correct_img, 97.5), (15,15,10,0))
+        processed_img = color_correct_img if is24 else cv.add(percentile_whitebalance(color_correct_img, 97.5), (15,15,10,0))
 
         # convert to RGB
         processed_img = cv.cvtColor(processed_img, cv.COLOR_BGR2RGB)
@@ -125,7 +125,7 @@ def run(path, dpi=1200, sizes={1000}, overwrite=False, output_tif=False):
         color_correct_img = color_correction(raw_img, detector, is24)
 
         # final processing
-        processed_img = percentile_whitebalance(color_correct_img, 90) if is24 else cv.add(percentile_whitebalance(color_correct_img, 97.5), (15,15,10,0))
+        processed_img = color_correct_img if is24 else cv.add(percentile_whitebalance(color_correct_img, 97.5), (15,15,10,0))
 
         # convert to RGB
         processed_img = cv.cvtColor(processed_img, cv.COLOR_BGR2RGB)
